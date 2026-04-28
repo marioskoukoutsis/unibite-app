@@ -1,34 +1,43 @@
-const express = require('express');
-const cors = require('cors');
-const mysql = require('mysql2/promise'); // Χρησιμοποιούμε την έκδοση με promises για πιο καθαρό κώδικα
+-- Δημιουργία της βάσης
+CREATE DATABASE IF NOT EXISTS unibite_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE unibite_db;
 
-const app = express();
-const PORT = 3000;
+-- Πίνακας Χρηστών
+CREATE TABLE users (
+                       id INT AUTO_INCREMENT PRIMARY KEY,
+                       name VARCHAR(100) NOT NULL,
+                       email VARCHAR(100) NOT NULL UNIQUE,
+                       role ENUM('student', 'admin') DEFAULT 'student',
+                       credits INT DEFAULT 5,
+                       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-app.use(cors());
-app.use(express.json());
+-- Πίνακας Αγγελιών
+CREATE TABLE listings (
+                          id INT AUTO_INCREMENT PRIMARY KEY,
+                          cook_id INT NOT NULL,
+                          title VARCHAR(255) NOT NULL,
+                          photo_url VARCHAR(255),
+                          notes TEXT,
+                          allergens JSON,
+                          total_portions INT NOT NULL,
+                          available_portions INT NOT NULL,
+                          pickup_location VARCHAR(255) NOT NULL,
+                          pickup_time DATETIME NOT NULL,
+                          status ENUM('active', 'inactive', 'deleted') DEFAULT 'active',
+                          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                          FOREIGN KEY (cook_id) REFERENCES users(id) ON DELETE CASCADE
+);
 
-// Ρυθμίσεις σύνδεσης με τη MySQL (XAMPP)
-const pool = mysql.createPool({
-    host: 'localhost',
-    user: 'root',      // Ο προεπιλεγμένος χρήστης του XAMPP
-    password: '',      // Στο XAMPP το password είναι συνήθως κενό
-    database: 'unibite_db'
-});
-
-// Δοκιμαστικό Endpoint για να δούμε αν βλέπει τη βάση
-app.get('/api/users', async (req, res) => {
-    try {
-        // Κάνουμε ένα απλό ερώτημα (query)
-        const [rows] = await pool.query('SELECT * FROM users');
-        res.json(rows); // Στέλνουμε τα αποτελέσματα στο Frontend σε μορφή JSON!
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Πρόβλημα με τη βάση δεδομένων' });
-    }
-});
-
-app.listen(PORT, () => {
-    console.log(`🚀 Ο Server τρέχει στο http://localhost:${PORT}`);
-    console.log(`🗄️ Αναμονή για σύνδεση με τη MySQL...`);
-});
+-- Πίνακας Αιτημάτων/Κρατήσεων
+CREATE TABLE requests (
+                          id INT AUTO_INCREMENT PRIMARY KEY,
+                          listing_id INT NOT NULL,
+                          consumer_id INT NOT NULL,
+                          status ENUM('pending', 'approved', 'rejected', 'picked_up', 'no_show') DEFAULT 'pending',
+                          rating INT DEFAULT NULL,
+                          rating_time DATETIME DEFAULT NULL,
+                          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                          FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE,
+                          FOREIGN KEY (consumer_id) REFERENCES users(id) ON DELETE CASCADE
+);
