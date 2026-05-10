@@ -31,6 +31,11 @@
                 <input type="text" id="title" class="form-control" placeholder="π.χ. Μακαρόνια με κιμά" required>
             </div>
 
+            <div class="form-group">
+                <label for="photo">Φωτογραφία (Προαιρετικά)</label>
+                <input type="file" id="photo" class="form-control" accept="image/*" style="border: none; padding-left: 0; background: transparent;">
+            </div>
+
             <div style="display: flex; gap: 20px;">
                 <div class="form-group" style="flex: 1;">
                     <label for="portions">Αριθμός Μερίδων</label>
@@ -40,12 +45,10 @@
                     <label for="time">Ώρα Παραλαβής</label>
                     <input type="datetime-local" id="time" class="form-control" required>
                 </div>
-            </div>
-
-            <div class="form-group">
-                <label for="location">Σημείο Παραλαβής</label>
-                <input type="text" id="location" class="form-control" placeholder="π.χ. Εστία Α, Δωμάτιο 10" required>
-            </div>
+            </div> <div class="form-group">
+            <label for="location">Σημείο Παραλαβής</label>
+            <input type="text" id="location" class="form-control" placeholder="π.χ. Εστία Α, Δωμάτιο 10" required>
+        </div>
 
             <div class="form-group">
                 <label for="allergens">Αλλεργιογόνα</label>

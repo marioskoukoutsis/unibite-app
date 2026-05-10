@@ -41,3 +41,5 @@ CREATE TABLE requests (
                           FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE,
                           FOREIGN KEY (consumer_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+ALTER TABLE users ADD COLUMN password VARCHAR(255) NOT NULL AFTER email;

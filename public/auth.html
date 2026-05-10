@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniBite - Είσοδος</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0;">
+
+<div class="container" style="max-width: 400px; width: 100%;">
+    <div class="card" style="padding: 3rem 2.5rem;">
+
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <a href="index.html">
+                <img src="unibite-logo.png" alt="UniBite Logo" class="logo-img-large" style="max-height: 80px;">
+            </a>
+        </div>
+
+        <form id="login-form">
+            <h3 style="margin-bottom: 1.5rem; text-align: center;">Σύνδεση</h3>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="login-email" class="form-control" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 2rem;">
+                <label>Κωδικός</label>
+                <input type="password" id="login-password" class="form-control" required>
+            </div>
+            <button type="submit" class="btn">Είσοδος</button>
+        </form>
+
+        <div id="auth-message" style="margin-top: 15px; text-align: center; font-weight: 500;"></div>
+
+        <div style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem;">
+            Δεν έχεις λογαριασμό; <a href="#" id="toggle-register" style="color: var(--primary-color); text-decoration: none; font-weight: 600;">Εγγραφή</a>
+        </div>
+
+        <form id="register-form" style="display: none; margin-top: 1rem;">
+            <hr style="border: 0; border-top: 1px solid var(--border-color); margin-bottom: 1.5rem;">
+            <h3 style="margin-bottom: 1.5rem; text-align: center;">Δημιουργία Λογαριασμού</h3>
+            <div class="form-group">
+                <label>Όνοματεπώνυμο</label>
+                <input type="text" id="reg-name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="reg-email" class="form-control" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 2rem;">
+                <label>Κωδικός</label>
+                <input type="password" id="reg-password" class="form-control" required>
+            </div>
+            <button type="submit" class="btn" style="background-color: var(--text-main);">Εγγραφή</button>
+        </form>
+
+    </div>
+</div>
+
+<script src="auth.js"></script>
+</body>
+</html>

@@ -1,9 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const listingController = require('../controllers/listingController'); // Φέρνουμε τον controller
+const listingController = require('../controllers/listingController');
 
-// Ορίζουμε τις διαδρομές. (Το '/api/listings' θα μπει αυτόματα από το server.js)
+// Οι παλιές μας διαδρομές
 router.get('/', listingController.getListings);
 router.post('/', listingController.createListing);
 
-module.exports = router; // Εξάγουμε το router
+// ΟΙ ΝΕΕΣ ΜΑΣ ΔΙΑΔΡΟΜΕΣ:
+// PUT για επεξεργασία, DELETE για διαγραφή. Το ":id" είναι μεταβλητή!
+router.put('/:id', listingController.updateListing);
+router.delete('/:id', listingController.deleteListing);
+
+module.exports = router;
