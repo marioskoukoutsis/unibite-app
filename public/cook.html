@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniBite - Πίνακας Μάγειρα</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="index.html" class="navbar-brand">
+        <img src="unibite-logo.png" alt="UniBite Logo" class="logo-img-nav">
+    </a>
+    <div class="navbar-links">
+        <a href="feed.html">Feed</a>
+        <a href="cook.html" style="color: var(--primary-color); font-weight: 600;">Ο Πίνακάς μου</a>
+    </div>
+</nav>
+
+<div class="container">
+
+    <div class="card">
+        <h2 style="margin-bottom: 2rem;">Δημιουργία Αγγελίας</h2>
+
+        <form id="create-listing-form">
+            <input type="hidden" id="cook_id" value="1">
+
+            <div class="form-group">
+                <label for="title">Τίτλος Φαγητού</label>
+                <input type="text" id="title" class="form-control" placeholder="π.χ. Μακαρόνια με κιμά" required>
+            </div>
+
+            <div style="display: flex; gap: 20px;">
+                <div class="form-group" style="flex: 1;">
+                    <label for="portions">Αριθμός Μερίδων</label>
+                    <input type="number" id="portions" class="form-control" min="1" placeholder="π.χ. 3" required>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label for="time">Ώρα Παραλαβής</label>
+                    <input type="datetime-local" id="time" class="form-control" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="location">Σημείο Παραλαβής</label>
+                <input type="text" id="location" class="form-control" placeholder="π.χ. Εστία Α, Δωμάτιο 10" required>
+            </div>
+
+            <div class="form-group">
+                <label for="allergens">Αλλεργιογόνα</label>
+                <input type="text" id="allergens" class="form-control" placeholder="π.χ. Γλουτένη, Γαλακτοκομικά">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 2.5rem;">
+                <label for="notes">Σημειώσεις (Προαιρετικά)</label>
+                <textarea id="notes" class="form-control" rows="2" placeholder="π.χ. Είναι αρκετά καυτερό!"></textarea>
+            </div>
+
+            <button type="submit" class="btn">Ανέβασμα Αγγελίας</button>
+        </form>
+
+        <div id="message" style="margin-top: 15px; text-align: center; font-weight: 500;"></div>
+    </div>
+
+    <h2 style="margin-top: 3.5rem; margin-bottom: 1.5rem; font-size: 1.4rem;">Οι Ενεργές Αγγελίες μου</h2>
+    <div id="my-listings-container">
+    </div>
+
+</div>
+
+<script src="cook.js"></script>
+</body>
+</html>
