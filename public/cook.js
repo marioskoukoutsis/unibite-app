@@ -12,6 +12,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const user = JSON.parse(storedUser);
     const currentCookId = user.id;
 
+    // Λειτουργία Αποσύνδεσης
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('user'); // Σβήνουμε τον χρήστη
+            window.location.href = 'index.html'; // Πίσω στην αρχική
+        });
+    }
+
     // 2. Βρίσκουμε τα στοιχεία του DOM
     const form = document.getElementById('create-listing-form');
     const messageDiv = document.getElementById('message');
@@ -111,15 +121,37 @@ document.addEventListener('DOMContentLoaded', () => {
             const dateObj = new Date(listing.pickup_time);
             const formattedDate = dateObj.toLocaleString('el-GR', { dateStyle: 'medium', timeStyle: 'short' });
 
+            // Σωστή εμφάνιση αλλεργιογόνων (επειδή αποθηκεύονται ως JSON Array ή String)
+            let allergensDisplay = '';
+            if (listing.allergens) {
+                let parsed = listing.allergens;
+                if (typeof parsed === 'string') {
+                    try { parsed = JSON.parse(parsed); } catch(e) {}
+                }
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    allergensDisplay = parsed.join(', ');
+                } else if (typeof parsed === 'string' && parsed.trim() !== '' && parsed !== '[]') {
+                    allergensDisplay = parsed;
+                }
+            }
+
+            // Αν υπάρχουν αλλεργιογόνα, φτιάχνουμε το HTML με ένα κομψό κόκκινο χρωματάκι
+            const allergensHtml = allergensDisplay
+                ? `<p style="margin-bottom: 0.3rem; color: #ef4444; font-size: 0.95rem;"><strong>⚠️ Αλλεργιογόνα:</strong> ${allergensDisplay}</p>`
+                : '';
+
             card.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: start;">
                     <div style="flex: 1;">
                         <h3 style="color: var(--text-main); font-weight: 700; margin-bottom: 0.5rem;">${listing.title}</h3>
                         
-                        ${listing.photo_url ? `<img src="${listing.photo_url}" style="max-width: 150px; border-radius: 8px; margin-bottom: 10px;" alt="Φαγητό">` : ''}
+                        ${listing.photo_url ? `<img src="http://localhost:3000${listing.photo_url}" style="max-width: 150px; border-radius: 8px; margin-bottom: 10px;" alt="Φαγητό">` : ''}
 
                         <p style="margin-bottom: 0.3rem; color: var(--text-muted); font-size: 0.95rem;"><strong>Διαθέσιμες:</strong> ${listing.available_portions} / ${listing.total_portions}</p>
                         <p style="margin-bottom: 0.3rem; color: var(--text-muted); font-size: 0.95rem;"><strong>Παραλαβή:</strong> ${listing.pickup_location} | ${formattedDate}</p>
+                        
+                        ${allergensHtml}
+                        
                         ${listing.notes ? `<p style="color: var(--text-muted); font-size: 0.95rem;"><strong>Σημειώσεις:</strong> ${listing.notes}</p>` : ''}
                     </div>
                     <div style="display: flex; gap: 10px; flex-direction: column; padding-left: 20px;">

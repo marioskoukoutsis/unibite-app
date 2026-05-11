@@ -4,6 +4,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleRegisterBtn = document.getElementById('toggle-register');
     const authMessage = document.getElementById('auth-message');
 
+    // Λειτουργία Εμφάνισης Κωδικού
+    document.getElementById('show-login-pass').addEventListener('change', function() {
+        document.getElementById('login-password').type = this.checked ? 'text' : 'password';
+    });
+    document.getElementById('show-reg-pass').addEventListener('change', function() {
+        document.getElementById('reg-password').type = this.checked ? 'text' : 'password';
+    });
+
     // --- ΝΕΟ: Διαβάζουμε πού ήθελε να πάει ο χρήστης από το URL! ---
     const urlParams = new URLSearchParams(window.location.search);
     const redirectTarget = urlParams.get('redirect') || 'index.html'; // Αν δεν βρει κάτι, πάει index
