@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UniBite</title>
+    <title>UniBite - Κεντρική Επιλογή</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0;">
@@ -13,14 +13,15 @@
         <div style="text-align: center; margin-bottom: 1.5rem;">
             <img src="unibite-logo.png" alt="UniBite Logo" class="logo-img-large">
         </div>
+
         <p style="color: var(--text-muted); margin-bottom: 2.5rem; font-size: 0.95rem;">Για φοιτητές, από φοιτητές</p>
 
-        <h3 id="welcome-text" style="margin-bottom: 1.5rem; color: var(--text-main); font-weight: 600; font-size: 1.1rem;">Επίλεξε τον ρόλο σου</h3>
+        <h3 id="welcome-text" style="margin-bottom: 1.5rem; color: var(--text-main); font-weight: 600; font-size: 1.1rem;">Φόρτωση...</h3>
 
-        <a href="auth.html?redirect=cook.html" id="btn-cook" class="btn" style="display: block; text-decoration: none; margin-bottom: 1rem; padding: 1rem;">
+        <a href="cook.html" class="btn" style="display: block; text-decoration: none; margin-bottom: 1rem; padding: 1rem;">
             👨‍🍳 Θέλω να μοιραστώ φαγητό
         </a>
-        <a href="auth.html?redirect=feed.html" id="btn-feed" class="btn" style="display: block; text-decoration: none; margin-bottom: 2rem; background-color: var(--primary-color); padding: 1rem;">
+        <a href="feed.html" class="btn" style="display: block; text-decoration: none; margin-bottom: 2rem; background-color: var(--primary-color); padding: 1rem;">
             😋 Πεινάω! (Αναζήτηση)
         </a>
 
@@ -34,19 +35,20 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // 1. Έλεγχος: Αν ΔΕΝ είναι συνδεδεμένος, τον διώχνουμε στο Login!
         const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-            const user = JSON.parse(storedUser);
-            document.getElementById('welcome-text').textContent = `Γεια σου, ${user.name}!`;
+        if (!storedUser) {
+            window.location.href = 'auth.html';
+            return;
+        }
 
-            // Απλή σύνδεση για όλους
-            document.getElementById('btn-cook').href = "cook.html";
-            document.getElementById('btn-feed').href = "feed.html";
+        // 2. Αν είναι συνδεδεμένος, στήνουμε τη σελίδα
+        const user = JSON.parse(storedUser);
+        document.getElementById('welcome-text').textContent = `Γεια σου, ${user.name}! Τι θα ήθελες να κάνεις;`;
 
-            // Αν είναι Admin, δείξε το Portal κάτω από τα κουμπιά
-            if (user.role === 'admin') {
-                document.getElementById('admin-portal-container').style.display = 'block';
-            }
+        // 3. Εμφάνιση Admin Portal αν ο ρόλος είναι 'admin'
+        if (user.role === 'admin') {
+            document.getElementById('admin-portal-container').style.display = 'block';
         }
     });
 </script>

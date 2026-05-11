@@ -81,25 +81,62 @@ exports.createListing = async (req, res) => {
 exports.updateListing = async (req, res) => {
     try {
         const listingId = req.params.id;
-        const { title, notes, total_portions, pickup_location, pickup_time, allergens } = req.body;
+        // ΠΡΟΣΘΗΚΗ: Διαβάζουμε και το photo_base64!
+        const { title, notes, total_portions, pickup_location, pickup_time, allergens, photo_base64 } = req.body;
 
+        // 1. Βρίσκουμε την τρέχουσα κατάσταση της αγγελίας (παίρνουμε και το photo_url τώρα)
+        const [currentListings] = await pool.query('SELECT total_portions, available_portions, photo_url FROM listings WHERE id = ?', [listingId]);
+
+        if (currentListings.length === 0) {
+            return res.status(404).json({ error: 'Η αγγελία δεν βρέθηκε.' });
+        }
+
+        const oldTotal = currentListings[0].total_portions;
+        const oldAvailable = currentListings[0].available_portions;
+        let photo_url = currentListings[0].photo_url; // Κρατάμε την ΠΑΛΙΑ φωτογραφία από προεπιλογή
+
+        // --- ΝΕΟ: ΕΠΕΞΕΡΓΑΣΙΑ ΝΕΑΣ ΦΩΤΟΓΡΑΦΙΑΣ (Αν ανέβασε) ---
+        if (photo_base64) {
+            const matches = photo_base64.match(/^data:image\/([a-zA-Z+]+);base64,(.+)$/);
+            if (matches && matches.length === 3) {
+                const extension = matches[1];
+                const imageData = matches[2];
+                const buffer = Buffer.from(imageData, 'base64');
+                const fileName = Date.now() + '.' + extension;
+
+                // Πρέπει να έχουμε κάνει require('fs') και require('path') πάνω-πάνω στο αρχείο (το έχουμε ήδη)
+                const fs = require('fs');
+                const path = require('path');
+                const filePath = path.join(__dirname, '../public/uploads', fileName);
+
+                fs.writeFileSync(filePath, buffer);
+                photo_url = '/uploads/' + fileName; // Αντικαθιστούμε με το νέο link!
+            }
+        }
+
+        // 2. Υπολογίζουμε πόσες μερίδες έχουν ήδη "κρατηθεί"
+        const claimedPortions = oldTotal - oldAvailable;
+        const newAvailable = total_portions - claimedPortions;
+
+        if (newAvailable < 0) {
+            return res.status(400).json({ error: `Δεν μπορείς να μειώσεις τόσο τις μερίδες. Έχουν ήδη δοθεί ${claimedPortions} μερίδες!` });
+        }
+
+        // 3. Ενημερώνουμε ΤΑ ΠΑΝΤΑ, μαζί με το photo_url!
         const query = `
             UPDATE listings
-            SET title = ?, notes = ?, total_portions = ?, pickup_location = ?, pickup_time = ?, allergens = ?
+            SET title = ?, notes = ?, total_portions = ?, available_portions = ?, pickup_location = ?, pickup_time = ?, allergens = ?, photo_url = ?
             WHERE id = ?
         `;
 
         const values = [
-            title, notes, total_portions, pickup_location, pickup_time,
+            title, notes, total_portions, newAvailable, pickup_location, pickup_time,
             allergens ? JSON.stringify(allergens) : null,
+            photo_url, // Το νέο ή το παλιό URL
             listingId
         ];
 
-        const [result] = await pool.query(query, values);
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Η αγγελία δεν βρέθηκε.' });
-        }
+        await pool.query(query, values);
 
         res.json({ message: 'Η αγγελία ενημερώθηκε επιτυχώς!' });
 

@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const bcrypt = require('bcrypt'); // Φέρνουμε τη βιβλιοθήκη κρυπτογράφησης!
 
 // --- ΕΓΓΡΑΦΗ (REGISTER) ---
 exports.register = async (req, res) => {
@@ -9,16 +10,18 @@ exports.register = async (req, res) => {
             return res.status(400).json({ error: 'Παρακαλώ συμπληρώστε όλα τα πεδία.' });
         }
 
-        // Ελέγχουμε αν υπάρχει ήδη χρήστης με αυτό το email
         const [existingUsers] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
         if (existingUsers.length > 0) {
             return res.status(400).json({ error: 'Αυτό το email χρησιμοποιείται ήδη.' });
         }
 
-        // Δημιουργία του χρήστη (παίρνει αυτόματα 5 credits βάσει του SQL schema)
+        // HASHING: Κρυπτογραφούμε τον κωδικό με επίπεδο δυσκολίας 10 (πολύ ασφαλές)
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Αποθηκεύουμε τον HASHED κωδικό στη βάση, ΟΧΙ το απλό κείμενο!
         const [result] = await pool.query(
             'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
-            [name, email, password, 'student']
+            [name, email, hashedPassword, 'student']
         );
 
         res.status(201).json({
@@ -41,14 +44,21 @@ exports.login = async (req, res) => {
             return res.status(400).json({ error: 'Λείπει email ή κωδικός.' });
         }
 
-        // Ψάχνουμε τον χρήστη με αυτό το email και κωδικό
-        const [users] = await pool.query('SELECT * FROM users WHERE email = ? AND password = ?', [email, password]);
+        // Ψάχνουμε τον χρήστη ΜΟΝΟ με το email του
+        const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
 
         if (users.length === 0) {
             return res.status(401).json({ error: 'Λάθος email ή κωδικός.' });
         }
 
         const user = users[0];
+
+        // ΣΥΓΚΡΙΣΗ: Ελέγχουμε αν ο κωδικός που έβαλε (plain) ταιριάζει με το κρυπτογραφημένο (hash) της βάσης
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        if (!isMatch) {
+            return res.status(401).json({ error: 'Λάθος email ή κωδικός.' });
+        }
 
         // Στέλνουμε πίσω τα στοιχεία του (χωρίς τον κωδικό)
         res.json({
@@ -72,19 +82,19 @@ exports.updateAccount = async (req, res) => {
             return res.status(400).json({ error: 'Παρακαλώ συμπληρώστε όλα τα πεδία.' });
         }
 
-        // Ελέγχουμε αν προσπαθεί να βάλει email που ανήκει σε ΑΛΛΟΝ χρήστη
         const [existing] = await pool.query('SELECT id FROM users WHERE email = ? AND id != ?', [email, userId]);
         if (existing.length > 0) {
             return res.status(400).json({ error: 'Αυτό το email χρησιμοποιείται ήδη από άλλον.' });
         }
 
-        // Κάνουμε Update
+        // Κρυπτογραφούμε τον ΝΕΟ κωδικό πριν τον αποθηκεύσουμε
+        const hashedPassword = await bcrypt.hash(password, 10);
+
         await pool.query(
             'UPDATE users SET name = ?, email = ?, password = ? WHERE id = ?',
-            [name, email, password, userId]
+            [name, email, hashedPassword, userId]
         );
 
-        // Παίρνουμε τα νέα στοιχεία του (εκτός του κωδικού) για να ανανεώσουμε τον Browser
         const [users] = await pool.query('SELECT id, name, email, role, credits FROM users WHERE id = ?', [userId]);
 
         res.json({ message: 'Τα στοιχεία σου ενημερώθηκαν!', user: users[0] });
