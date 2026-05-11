@@ -1,12 +1,12 @@
 const mysql = require('mysql2/promise');
-require('dotenv').config();
 
+// Απευθείας σύνδεση με τις τοπικές ρυθμίσεις της MySQL
 const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT || 3306
+    host: 'localhost',
+    user: 'root',         // Το προεπιλεγμένο username
+    password: 'taxvax2005',         // Κενό password για το XAMPP
+    database: 'unibite_db', // Το όνομα της βάσης που δημιούργησες
+    port: 3306            // Η τυπική θύρα της MySQL
 });
 
-module.exports = pool; // Το εξάγουμε για να το χρησιμοποιούν οι controllers
+module.exports = pool;

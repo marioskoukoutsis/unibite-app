@@ -19,10 +19,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Εισαγωγή των Routes
 const listingRoutes = require('./routes/listingRoutes');
 const authRoutes = require('./routes/authRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 // Χρήση των Routes
 app.use('/api/listings', listingRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/', (req, res) => {
     res.send('Καλώς ήρθες στο API του UniBite! Ο Server λειτουργεί.');
