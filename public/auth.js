@@ -51,20 +51,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
             });
+
             const result = await response.json();
 
             if (response.ok) {
-                // Έλεγχος Δικαιωμάτων Admin
+                // Αν ο χρήστης ήρθε από το "Είσοδος Διαχειριστή" αλλά ΔΕΝ είναι admin -> μπλοκάρισμα
                 if (redirectTarget === 'admin.html' && result.user.role !== 'admin') {
                     authMessage.style.color = 'red';
                     authMessage.textContent = 'Πρόσβαση αρνήθηκε: Δεν έχετε δικαιώματα διαχειριστή!';
                     return;
                 }
 
+                // Αποθηκεύουμε τον χρήστη ΜΟΝΟ μετά από επιτυχημένο login
                 localStorage.setItem('user', JSON.stringify(result.user));
                 authMessage.style.color = 'var(--primary-color)';
                 authMessage.textContent = 'Επιτυχής σύνδεση! Μεταφορά...';
 
+                // Πάντα ανακατευθύνουμε στην αρχική επιλογή του χρήστη (cook.html / feed.html / admin.html).
+                // Αν είναι admin που μπήκε για cook/feed, θα δει επιπλέον το Admin Portal στο navbar
+                // (το χειρίζεται το cook.js / feed.js με βάση το user.role).
                 setTimeout(() => window.location.href = redirectTarget, 1000);
             } else {
                 authMessage.style.color = 'red';

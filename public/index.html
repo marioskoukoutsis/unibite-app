@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UniBite</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        .admin-link:hover { color: var(--text-main) !important; border-bottom-color: var(--text-main) !important; }
-    </style>
 </head>
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0;">
 
@@ -27,31 +24,28 @@
             😋 Πεινάω! (Αναζήτηση)
         </a>
 
-        <div style="margin-top: 1rem;">
-            <a href="auth.html?redirect=admin.html" id="btn-admin" class="admin-link" style="text-decoration: none; color: var(--text-muted); font-size: 0.85rem; padding-bottom: 2px; border-bottom: 1px solid transparent; transition: var(--transition);">
-                Είσοδος Διαχειριστή
+        <div id="admin-portal-container" style="display: none; margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+            <a href="admin.html" class="btn" style="display: block; text-decoration: none; background-color: #3f3f46; padding: 0.8rem;">
+                🛡️ Admin Portal
             </a>
         </div>
     </div>
 </div>
 
 <script>
-    // Το "Μυαλό" της αρχικής σελίδας
     document.addEventListener('DOMContentLoaded', () => {
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
             const user = JSON.parse(storedUser);
+            document.getElementById('welcome-text').textContent = `Γεια σου, ${user.name}!`;
 
-            // Αλλάζουμε τον τίτλο για να τον καλωσορίσουμε
-            document.getElementById('welcome-text').textContent = `Γεια σου, ${user.name}! Τι θα ήθελες να κάνεις;`;
-
-            // Παρακάμπτουμε το auth.html για Μάγειρα και Καταναλωτή
+            // Απλή σύνδεση για όλους
             document.getElementById('btn-cook').href = "cook.html";
             document.getElementById('btn-feed').href = "feed.html";
 
-            // Αν είναι ΗΔΗ Admin, μπαίνει ελεύθερα. Αν όχι, μένει το link στο auth.html για να κάνει login με τα σωστά στοιχεία!
+            // Αν είναι Admin, δείξε το Portal κάτω από τα κουμπιά
             if (user.role === 'admin') {
-                document.getElementById('btn-admin').href = "admin.html";
+                document.getElementById('admin-portal-container').style.display = 'block';
             }
         }
     });

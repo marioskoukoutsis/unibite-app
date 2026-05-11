@@ -7,6 +7,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const user = JSON.parse(storedUser);
+
+// --- Εμφάνιση Admin Portal στο Navigation αν είναι Admin ---
+    if (user.role === 'admin') {
+        const navLinks = document.querySelector('.navbar-links');
+        const adminLink = document.createElement('a');
+        adminLink.href = 'admin.html';
+        adminLink.textContent = 'Admin Portal';
+        adminLink.style.cssText = 'color: #3f3f46; font-weight: 700; margin-left: 2.5rem;';
+
+        // Το τοποθετούμε πριν από τον "Λογαριασμό μου"
+        const accountLink = navLinks.querySelector('a[href="account.html"]');
+        navLinks.insertBefore(adminLink, accountLink);
+    }
     const currentCookId = user.id;
 
     const form = document.getElementById('create-listing-form');
