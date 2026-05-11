@@ -155,3 +155,50 @@ body {
     border-bottom: 2px solid var(--primary-color); /* Η γραμμή παχαίνει και παίρνει χρώμα */
 }
 .form-control::placeholder { color: #a1a1aa; font-weight: 300; }
+
+/* =========================================
+   5. MOBILE RESPONSIVENESS (Media Queries)
+   ========================================= */
+@media (max-width: 768px) {
+    /* Το μενού γίνεται κάθετο και μπαίνει στο κέντρο */
+    .navbar {
+        flex-direction: column;
+        padding: 1.5rem 1rem;
+        gap: 15px;
+    }
+
+    /* Τα links του μενού αγκαλιάζονται ώστε να χωράνε */
+    .navbar-links {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 15px;
+    }
+
+    /* Βγάζουμε το αριστερό κενό που είχαμε για τις μεγάλες οθόνες */
+    .navbar-links a {
+        margin-left: 0 !important;
+    }
+
+    /* Μικραίνουμε λίγο το εσωτερικό κενό (padding) στις κάρτες για να μη χάνουμε χώρο στο κινητό */
+    .card {
+        padding: 1.5rem;
+    }
+
+    /* Οι κάρτες των αγγελιών (τίτλος αριστερά - κουμπιά δεξιά) γίνονται κάθετες! */
+    /* Στο JavaScript βάλαμε τα στοιχεία σε divs, τα πιάνουμε με CSS τώρα: */
+    #my-listings-container .card > div {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    /* Τα κουμπιά Επεξεργασίας/Διαγραφής πάνε κάτω-κάτω και πιάνουν όλο το πλάτος */
+    #my-listings-container .card > div > div:nth-child(2) {
+        padding-left: 0 !important;
+        width: 100%;
+        flex-direction: row !important; /* Μπαίνουν δίπλα-δίπλα */
+    }
+    #my-listings-container .card > div > div:nth-child(2) button {
+        flex: 1; /* Μοιράζονται τον χώρο ακριβώς στη μέση */
+    }
+}

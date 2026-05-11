@@ -16,7 +16,6 @@
         <a href="feed.html">Feed</a>
         <a href="cook.html">Ο Πίνακάς μου</a>
         <a href="account.html" style="color: var(--primary-color); font-weight: 600;">Ο Λογαριασμός μου</a>
-        <a href="#" id="logout-btn" style="color: #ef4444; margin-left: 2.5rem; font-weight: 600;">Αποσύνδεση</a>
     </div>
 </nav>
 
@@ -39,13 +38,16 @@
                 <label>Νέος ή Τρέχων Κωδικός</label>
                 <input type="password" id="acc-password" class="form-control" placeholder="Πληκτρολόγησε τον κωδικό" required>
             </div>
-            <div style="margin-bottom: 2rem; text-align: left;">
+            <div style="margin-bottom: 2.5rem; text-align: left;">
                 <label style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 5px;">
                     <input type="checkbox" id="show-acc-pass"> Εμφάνιση κωδικού
                 </label>
             </div>
 
-            <button type="submit" class="btn">Αποθήκευση Αλλαγών</button>
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" class="btn" style="flex: 2;">Αποθήκευση Αλλαγών</button>
+                <button type="button" id="logout-btn" class="btn" style="flex: 1; background-color: transparent; color: #ef4444; border: 1px solid #fca5a5; box-shadow: none;">Αποσύνδεση</button>
+            </div>
         </form>
 
         <div id="acc-message" style="margin-top: 15px; text-align: center; font-weight: 500;"></div>
@@ -68,7 +70,7 @@
             document.getElementById('acc-password').type = this.checked ? 'text' : 'password';
         });
 
-        // Αποσύνδεση
+        // Αποσύνδεση (Το JavaScript παραμένει ίδιο, απλά πιάνει το κουμπί στη νέα του θέση!)
         document.getElementById('logout-btn').addEventListener('click', (e) => {
             e.preventDefault();
             localStorage.removeItem('user');
@@ -92,7 +94,7 @@
                 const result = await response.json();
 
                 if (response.ok) {
-                    localStorage.setItem('user', JSON.stringify(result.user)); // Ανανεώνουμε το localStorage!
+                    localStorage.setItem('user', JSON.stringify(result.user));
                     messageDiv.style.color = 'green';
                     messageDiv.textContent = 'Επιτυχία! ' + result.message;
                 } else {

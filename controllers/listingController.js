@@ -5,7 +5,14 @@ const path = require('path');
 // Η συνάρτηση για το GET
 exports.getListings = async (req, res) => {
     try {
-        const [listings] = await pool.query("SELECT * FROM listings WHERE status = 'active'");
+        // SQL ΜΑΓΕΙΑ: Φέρε όσες είναι 'active' ΚΑΙ δημιουργήθηκαν αυστηρά τις τελευταίες 48 ώρες!
+        const query = `
+            SELECT * FROM listings 
+            WHERE status = 'active' 
+            AND created_at >= NOW() - INTERVAL 48 HOUR
+        `;
+
+        const [listings] = await pool.query(query);
         res.json(listings);
     } catch (error) {
         console.error(error);
@@ -70,20 +77,23 @@ exports.createListing = async (req, res) => {
     }
 };
 
-// --- ΝΕΟ: Η συνάρτηση για την ΕΠΕΞΕΡΓΑΣΙΑ (PUT) ---
+// --- Η συνάρτηση για την ΕΠΕΞΕΡΓΑΣΙΑ (PUT) ---
 exports.updateListing = async (req, res) => {
     try {
-        const listingId = req.params.id; // Παίρνουμε το ID από το URL
-        const { title, notes, total_portions, pickup_location, pickup_time } = req.body;
+        const listingId = req.params.id;
+        const { title, notes, total_portions, pickup_location, pickup_time, allergens } = req.body;
 
-        // Κάνουμε UPDATE μόνο στα πεδία που λογικά θα ήθελε να αλλάξει ο μάγειρας
         const query = `
-            UPDATE listings 
-            SET title = ?, notes = ?, total_portions = ?, pickup_location = ?, pickup_time = ?
+            UPDATE listings
+            SET title = ?, notes = ?, total_portions = ?, pickup_location = ?, pickup_time = ?, allergens = ?
             WHERE id = ?
         `;
 
-        const values = [title, notes, total_portions, pickup_location, pickup_time, listingId];
+        const values = [
+            title, notes, total_portions, pickup_location, pickup_time,
+            allergens ? JSON.stringify(allergens) : null,
+            listingId
+        ];
 
         const [result] = await pool.query(query, values);
 
