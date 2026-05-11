@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // Αν το editId έχει τιμή, κάνουμε PUT στο localhost:3000/api/listings/:id, αλλιώς POST
-            const url = editId ? `http://localhost:3000/api/listings/${editId}` : 'http://localhost:3000/api/listings';
+            const url = editId ? `/api/listings/${editId}` : '/api/listings';
             const method = editId ? 'PUT' : 'POST';
 
             const response = await fetch(url, {
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchMyListings() {
         try {
-            const response = await fetch('http://localhost:3000/api/listings');
+            const response = await fetch('/api/listings');
             const allListings = await response.json();
             currentListings = allListings.filter(listing => listing.cook_id === currentCookId);
             renderListings(currentListings);
@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="display: flex; justify-content: space-between; align-items: start;">
                     <div style="flex: 1;">
                         <h3 style="color: var(--text-main); font-weight: 700; margin-bottom: 0.5rem;">${listing.title}</h3>
-                        ${listing.photo_url ? `<img src="http://localhost:3000${listing.photo_url}" style="max-width: 150px; border-radius: 8px; margin-bottom: 10px;" alt="Φαγητό">` : ''}
+                        ${listing.photo_url ? `<img src="${listing.photo_url}" style="max-width: 150px; border-radius: 8px; margin-bottom: 10px;" alt="Φαγητό">` : ''}
                         <p style="margin-bottom: 0.3rem; color: var(--text-muted); font-size: 0.95rem;"><strong>Διαθέσιμες:</strong> ${listing.available_portions} / ${listing.total_portions}</p>
                         <p style="margin-bottom: 0.3rem; color: var(--text-muted); font-size: 0.95rem;"><strong>Παραλαβή:</strong> ${listing.pickup_location} | ${formattedDate}</p>
                         ${allergensHtml}
@@ -204,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isConfirmed = confirm("Είσαι σίγουρος ότι θέλεις να διαγράψεις αυτή την αγγελία;");
         if (!isConfirmed) return;
         try {
-            const response = await fetch(`http://localhost:3000/api/listings/${id}`, { method: 'DELETE' });
+            const response = await fetch(`/api/listings/${id}`, { method: 'DELETE' });
             if (response.ok) fetchMyListings(); // Δεν κάνουμε reload, απλά ανανεώνουμε τη λίστα
             else alert('Σφάλμα κατά τη διαγραφή');
         } catch (error) { alert('Πρόβλημα σύνδεσης.'); }
