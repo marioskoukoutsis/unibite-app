@@ -1,11 +1,36 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="el">
 <head>
-    <link rel="stylesheet" href="style.css">
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniBite - Feed Φαγητού</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+    <nav class="navbar">
+        <a href="index.html" class="navbar-brand">
+            <img src="unibite-logo.png" alt="UniBite Logo" class="logo-img-nav">
+        </a>
+        <div class="navbar-links">
+            <a href="feed.html" class="active">Feed</a>
+            <a href="cook.html">Ο Πίνακάς μου</a>
+            <a href="account.html">Ο Λογαριασμός μου</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="feed-header">
+            <h2>Διαθέσιμα Γεύματα</h2>
+            <div id="user-credits-display" class="credits-badge">
+                </div>
+        </div>
+
+        <div id="feed-container" class="feed-grid">
+            <p class="loading-text">Αναζήτηση για φρέσκο φαγητό...</p>
+        </div>
+    </div>
+
+    <script src="feed.js"></script>
 </body>
 </html>

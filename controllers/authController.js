@@ -15,8 +15,8 @@ exports.register = async (req, res) => {
             return res.status(400).json({ error: 'Αυτό το email χρησιμοποιείται ήδη.' });
         }
 
-        // HASHING: Κρυπτογραφούμε τον κωδικό με επίπεδο δυσκολίας 10 (πολύ ασφαλές)
-        const hashedPassword = await bcrypt.hash(password, 10);
+        // HASHING: Κρυπτογραφούμε τον κωδικό
+       const hashedPassword = await bcrypt.hash(password, parseInt(process.env.HASH_LEVEL));
 
         // Αποθηκεύουμε τον HASHED κωδικό στη βάση, ΟΧΙ το απλό κείμενο!
         const [result] = await pool.query(
