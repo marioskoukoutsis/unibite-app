@@ -1,11 +1,50 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="el">
 <head>
-    <link rel="stylesheet" href="style.css">
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniBite - Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<nav class="navbar">
+    <a href="index.html" class="navbar-brand">
+        <img src="unibite-logo.png" alt="UniBite Logo" class="logo-img-nav">
+    </a>
+    <div class="navbar-links" style="display: flex; align-items: center;">
+        <a href="feed.html">Feed</a>
+        <a href="cook.html">Ο Πίνακάς μου</a>
+        <a href="admin.html" style="color: var(--primary-color); font-weight: 600;">Admin Portal</a>
+        <a href="account.html">Ο Λογαριασμός μου</a>
+    </div>
+</nav>
+
+<div class="container">
+    <h2 style="margin-bottom: 2rem; text-align: center;">Πίνακας Ελέγχου Διαχειριστή</h2>
+
+    <div class="card" style="margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 1rem; color: var(--text-main);">Στατιστικά Μήνα</h3>
+        <p style="font-size: 1.1rem;">Συνολικές μερίδες που διαμοιράστηκαν επιτυχώς: <strong id="total-portions" style="color: var(--primary-color); font-size: 1.5rem;">...</strong></p>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-bottom: 1rem; color: var(--text-main);">Κατάταξη (Leaderboard)</h3>
+        
+        <div style="margin-bottom: 1.5rem;">
+            <h4 style="color: var(--text-muted); margin-bottom: 0.5rem;">🏆 Top Donor (Περισσότερες Προσφορές)</h4>
+            <p id="top-donor" style="font-weight: 600; font-size: 1.1rem;">Φόρτωση...</p>
+        </div>
+
+        <div>
+            <h4 style="color: var(--text-muted); margin-bottom: 0.5rem;">⭐ Γεύματα με την Υψηλότερη Αξιολόγηση</h4>
+            <ul id="top-meals" style="list-style-type: none; padding: 0;">
+                <li>Φόρτωση...</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script src="admin.js"></script>
 </body>
 </html>
