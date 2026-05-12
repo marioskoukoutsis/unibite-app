@@ -16,7 +16,7 @@ exports.register = async (req, res) => {
         }
 
         // HASHING: Κρυπτογραφούμε τον κωδικό
-        const hashedPassword = await bcrypt.hash(password, process.env.HASH_LEVEL);
+       const hashedPassword = await bcrypt.hash(password, parseInt(process.env.HASH_LEVEL));
 
         // Αποθηκεύουμε τον HASHED κωδικό στη βάση, ΟΧΙ το απλό κείμενο!
         const [result] = await pool.query(
