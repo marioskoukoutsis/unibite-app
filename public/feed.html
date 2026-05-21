@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UniBite - Feed Φαγητού</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
     <nav class="navbar">
         <a href="index.html" class="navbar-brand">
-            <img src="unibite-logo.png" alt="UniBite Logo" class="logo-img-nav">
+            <img src="images/unibite-logo.png" alt="UniBite Logo" class="logo-img-nav">
         </a>
         <div class="navbar-links">
             <a href="feed.html" class="active">Feed</a>
@@ -23,14 +23,20 @@
         <div class="feed-header">
             <h2>Διαθέσιμα Γεύματα</h2>
             <div id="user-credits-display" class="credits-badge">
-                </div>
+                <span id="credits-count">0</span> credits
+            </div>
         </div>
 
         <div id="feed-container" class="feed-grid">
             <p class="loading-text">Αναζήτηση για φρέσκο φαγητό...</p>
         </div>
+
+        <h2 style="margin-top: 3.5rem; margin-bottom: 1.5rem; font-size: 1.4rem;">Οι Παραγγελίες μου</h2>
+        <div id="my-orders-container">
+            <p style="color: var(--text-muted);">Φόρτωση των παραγγελιών σου...</p>
+        </div>
     </div>
 
-    <script src="feed.js"></script>
+    <script src="js/feed.js"></script>
 </body>
 </html>

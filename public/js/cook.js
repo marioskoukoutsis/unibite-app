@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/listings');
             const allListings = await response.json();
-            currentListings = allListings.filter(listing => listing.cook_id === currentCookId);
+            currentListings = allListings.filter(listing => Number(listing.cook_id) === Number(currentCookId));
             renderListings(currentListings);
         } catch (error) {
             listingsContainer.innerHTML = '<p style="color: red;">Αποτυχία φόρτωσης.</p>';
@@ -199,6 +199,95 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('cancel-edit-btn').style.display = 'none';
         messageDiv.textContent = '';
     };
+
+    const requestsContainer = document.getElementById('requests-container');
+
+    async function fetchMyRequests() {
+        try {
+            const response = await fetch(`/api/requests?cook_id=${currentCookId}`);
+            const requests = await response.json();
+            renderRequests(requests);
+        } catch (error) {
+            console.error("Σφάλμα κατά τη φόρτωση των αιτημάτων:", error);
+            if (requestsContainer) {
+                requestsContainer.innerHTML = '<p style="color: red;">Αποτυχία φόρτωσης των αιτημάτων.</p>';
+            }
+        }
+    }
+
+    function renderRequests(requests) {
+    if (!requestsContainer) return;
+    requestsContainer.innerHTML = '';
+
+    if (requests.length === 0) {
+        requestsContainer.innerHTML = '<p style="color: var(--text-muted); text-align: center;">Δεν έχεις λάβει ακόμα αιτήματα.</p>';
+        return;
+    }
+
+    requests.forEach(request => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.marginTop = '1rem';
+        card.style.padding = '1.5rem';
+
+        let actionButtons = '';
+        let statusText = '';
+
+        if (request.status === 'pending') {
+            statusText = '<span style="color: #f59e0b; font-weight: 600;">Σε Εκκρεμότητα ⏳</span>';
+            actionButtons = `
+                <button class="btn" style="background-color: #10b981; margin-bottom: 8px; padding: 0.5rem;" onclick="updateRequestStatus(${request.id}, 'approved')">✅ Έγκριση</button>
+                <button class="btn" style="background-color: #ef4444; padding: 0.5rem;" onclick="updateRequestStatus(${request.id}, 'rejected')">❌ Απόρριψη</button>
+            `;
+        } else if (request.status === 'approved') {
+            statusText = '<span style="color: #10b981; font-weight: 600;">Εγκρίθηκε ✅</span>';
+        } else if (request.status === 'rejected') {
+            statusText = '<span style="color: #ef4444; font-weight: 600;">Απορρίφθηκε ❌</span>';
+        } else {
+            statusText = `<span style="color: var(--text-muted); font-weight: 600;">${request.status}</span>`;
+        }
+
+        const formattedDate = new Date(request.created_at).toLocaleString('el-GR', { dateStyle: 'medium', timeStyle: 'short' });
+
+        card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                <div>
+                    <h4 style="margin-bottom: 0.3rem; color: var(--text-main); font-weight: 600;">Ο/Η <strong>${request.consumer_name}</strong> ζήτησε: </h4>
+                    <p style="color: var(--primary-color); font-weight: 600; margin-bottom: 0.5rem;">🍽️ ${request.listing_title}</p>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.2rem;">Κατάσταση: ${statusText}</p>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Ημερομηνία: ${formattedDate}</p>
+                </div>
+                <div style="display: flex; flex-direction: column; min-width: 120px;">
+                    ${actionButtons}
+                </div>
+            </div>
+        `;
+        requestsContainer.appendChild(card);
+    });
+}
+
+    window.updateRequestStatus = async function(id, newStatus) {
+        try {
+            const response = await fetch(`/api/requests/${id}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                fetchMyRequests(); 
+                fetchMyListings();
+            } else {
+                alert(`Πρόβλημα σύνδεσης με τον σέρβερ`);
+            }
+        } catch (error) {
+            alert('Πρόβλημα σύνδεσης με τον server.');
+        }
+    }
+
+    fetchMyRequests();
 
     window.deleteListing = async function(id) {
         const isConfirmed = confirm("Είσαι σίγουρος ότι θέλεις να διαγράψεις αυτή την αγγελία;");
