@@ -61,6 +61,25 @@
 
         const user = JSON.parse(storedUser);
 
+        // --- ΝΕΟ: Εμφάνιση Admin Portal στο Navigation αν είναι Admin ---
+        if (user.role === 'admin') {
+            const navLinks = document.querySelector('.navbar-links');
+            if (navLinks) {
+                const adminLink = document.createElement('a');
+                adminLink.href = 'admin.html';
+                adminLink.textContent = 'Admin Portal';
+                adminLink.style.cssText = 'color: #3f3f46; font-weight: 700; margin-left: 2.5rem;';
+
+                // Το τοποθετούμε πριν από τον "Λογαριασμό μου"
+                const accountLink = navLinks.querySelector('a[href="account.html"]');
+                if (accountLink) {
+                    navLinks.insertBefore(adminLink, accountLink);
+                } else {
+                    navLinks.appendChild(adminLink);
+                }
+            }
+        }
+
         // Γεμίζουμε τη φόρμα με τα τρέχοντα στοιχεία
         document.getElementById('acc-name').value = user.name;
         document.getElementById('acc-email').value = user.email;
@@ -70,7 +89,7 @@
             document.getElementById('acc-password').type = this.checked ? 'text' : 'password';
         });
 
-        // Αποσύνδεση (Το JavaScript παραμένει ίδιο, απλά πιάνει το κουμπί στη νέα του θέση!)
+        // Αποσύνδεση
         document.getElementById('logout-btn').addEventListener('click', (e) => {
             e.preventDefault();
             localStorage.removeItem('user');
@@ -86,7 +105,7 @@
             const messageDiv = document.getElementById('acc-message');
 
             try {
-                const response = await fetch(`http://localhost:3000/api/auth/update/${user.id}`, {
+                const response = await fetch(`/api/auth/update/${user.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, email, password })
