@@ -7,13 +7,21 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // Εμφάνιση πόντων (Credits)
-    const creditsDisplay = document.getElementById('user-credits-display');
-    if (creditsDisplay) {
-        creditsDisplay.textContent = `Οι Πόντοι σου: ${user.credits} 🪙`;
+    const feedContainer = document.getElementById('feed-container');
+
+    async function fetchAndDisplayCredits() {
+        try {
+            const response = await fetch(`/api/auth/user/${user.id}`);
+            if (!response.ok) return;
+            const userData = await response.json();
+            const creditsCount = document.getElementById('credits-count');
+            if (creditsCount) creditsCount.textContent = userData.credits;
+        } catch (error) {
+            console.error('Αποτυχία φόρτωσης πόντων.');
+        }
     }
 
-    const feedContainer = document.getElementById('feed-container');
+    fetchAndDisplayCredits();
 
     // 1. Λήψη των αγγελιών από το Backend
     async function fetchListings() {

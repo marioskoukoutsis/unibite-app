@@ -256,6 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const formattedDate = new Date(request.created_at).toLocaleString('el-GR', { dateStyle: 'medium', timeStyle: 'short' });
+        const pickupStr = new Date(request.pickup_time).toLocaleString('el-GR', { dateStyle: 'medium', timeStyle: 'short' });
 
         let ratingHtml = '';
         if (request.rating) {
@@ -276,8 +277,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div>
                     <h4 style="margin-bottom: 0.3rem; color: var(--text-main); font-weight: 600;">Ο/Η <strong>${request.consumer_name}</strong> ζήτησε: </h4>
                     <p style="color: var(--primary-color); font-weight: 600; margin-bottom: 0.5rem;">🍽️ ${request.listing_title}</p>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.2rem;">Παραλαβή: ${request.pickup_location} | ${pickupStr}</p>
                     <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.2rem;">Κατάσταση: ${statusText}</p>
-                    <p style="font-size: 0.8rem; color: var(--text-muted);">Ημερομηνία: ${formattedDate}</p>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Αίτημα: ${formattedDate}</p>
                     ${ratingHtml}
                 </div>
                 <div style="display: flex; flex-direction: column; min-width: 120px;">
@@ -300,10 +302,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (response.ok) {
-                fetchMyRequests(); 
+                fetchMyRequests();
                 fetchMyListings();
+                fetchAndDisplayCredits();
             } else {
-                alert(`Πρόβλημα σύνδεσης με τον σέρβερ`);
+                alert(`Σφάλμα: ${result.error}`);
             }
         } catch (error) {
             alert('Πρόβλημα σύνδεσης με τον server.');
@@ -311,6 +314,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     fetchMyRequests();
+    fetchAndDisplayCredits();
+
+    async function fetchAndDisplayCredits() {
+        try {
+            const response = await fetch(`/api/auth/user/${currentCookId}`);
+            if (!response.ok) return;
+            const userData = await response.json();
+            const creditsEl = document.getElementById('credits-value');
+            if (creditsEl) creditsEl.textContent = userData.credits;
+        } catch (error) {
+            console.error('Αποτυχία φόρτωσης πόντων.');
+        }
+    }
 
     window.deleteListing = async function(id) {
         const isConfirmed = confirm("Είσαι σίγουρος ότι θέλεις να διαγράψεις αυτή την αγγελία;");
