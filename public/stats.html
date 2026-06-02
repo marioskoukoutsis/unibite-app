@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniBite - Στατιστικά & Leaderboard</title>
+    <meta name="description" content="Δες τα στατιστικά της κοινότητας UniBite και ανέβα στην κατάταξη!">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="index.html" class="navbar-brand">
+        <img src="images/unibite-logo.png" alt="UniBite Logo" class="logo-img-nav">
+    </a>
+    <div class="navbar-links">
+        <a href="feed.html">Feed</a>
+        <a href="cook.html">Ο Πίνακάς μου</a>
+        <a href="stats.html" style="color: var(--primary-color); font-weight: 600;">Στατιστικά</a>
+        <a href="account.html">Ο Λογαριασμός μου</a>
+    </div>
+</nav>
+
+<div class="container" style="max-width: 750px;">
+
+    <!-- Header -->
+    <div style="text-align: center; margin-bottom: 2.5rem;">
+        <h1 style="font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 0.5rem;">
+            📊 Στατιστικά Κοινότητας
+        </h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">Δες πώς πάει η κοινότητά μας — και ανέβα στην κατάταξη!</p>
+    </div>
+
+    <!-- Stats Overview Cards -->
+    <div class="stats-overview">
+        <div class="stat-card">
+            <span class="stat-icon">🍽️</span>
+            <span class="stat-value" id="stat-total-portions">—</span>
+            <span class="stat-label">Μερίδες Συνολικά</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-icon">📅</span>
+            <span class="stat-value" id="stat-monthly-portions">—</span>
+            <span class="stat-label">Τον Τελευταίο Μήνα</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-icon">👨‍🍳</span>
+            <span class="stat-value" id="stat-total-cooks">—</span>
+            <span class="stat-label">Ενεργοί Μάγειρες</span>
+        </div>
+    </div>
+
+    <!-- Top Cooks Leaderboard -->
+    <div class="card" style="margin-bottom: 2rem;">
+        <h2 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 1.2rem;">
+            🏆 Κατάταξη Top Μαγείρων
+        </h2>
+        <div id="leaderboard-container">
+            <p style="color: var(--text-muted); text-align: center;">Φόρτωση κατάταξης...</p>
+        </div>
+    </div>
+
+    <!-- Top Meals -->
+    <div class="card">
+        <h2 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 1.2rem;">
+            ⭐ Γεύματα με τις Καλύτερες Κριτικές
+        </h2>
+        <div id="top-meals-container">
+            <p style="color: var(--text-muted); text-align: center;">Φόρτωση γευμάτων...</p>
+        </div>
+    </div>
+
+</div>
+
+<script src="js/stats.js"></script>
+</body>
+</html>
