@@ -261,15 +261,23 @@ document.addEventListener('DOMContentLoaded', () => {
         let ratingHtml = '';
         if (request.rating) {
             const ratingNum = Number(request.rating);
-            const starsVisual = '★'.repeat(ratingNum) + '☆'.repeat(5 - ratingNum);
-            const ratingLabels = { 1: 'Κακό 😞', 2: 'Μέτριο 😐', 3: 'Καλό 🙂', 4: 'Πολύ Καλό 😊', 5: 'Εξαιρετικό 🤩' };
-            ratingHtml = `
-                <div class="rating-badge-cook">
-                    <span class="badge-label">Αξιολόγηση:</span>
-                    <span class="stars-show">${starsVisual}</span>
-                    <span class="badge-value">${ratingLabels[ratingNum] || ratingNum}</span>
-                </div>
-            `;
+            if (ratingNum === -1) {
+                ratingHtml = `
+                    <div class="rating-badge-cook" style="background: linear-gradient(135deg, #fef2f2, #fee2e2); border-color: #fca5a5;">
+                        <span class="badge-label" style="color: #dc2626;">⏰ Ο χρήστης δεν αξιολόγησε εντός 48 ωρών</span>
+                    </div>
+                `;
+            } else if (ratingNum > 0) {
+                const starsVisual = '★'.repeat(ratingNum) + '☆'.repeat(5 - ratingNum);
+                const ratingLabels = { 1: 'Κακό 😞', 2: 'Μέτριο 😐', 3: 'Καλό 🙂', 4: 'Πολύ Καλό 😊', 5: 'Εξαιρετικό 🤩' };
+                ratingHtml = `
+                    <div class="rating-badge-cook">
+                        <span class="badge-label">Αξιολόγηση:</span>
+                        <span class="stars-show">${starsVisual}</span>
+                        <span class="badge-value">${ratingLabels[ratingNum] || ratingNum}</span>
+                    </div>
+                `;
+            }
         }
 
         card.innerHTML = `

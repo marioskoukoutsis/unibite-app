@@ -39,12 +39,15 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderFeed(listings) {
         feedContainer.innerHTML = ''; // Καθαρισμός του "loading"
 
-        if (listings.length === 0) {
-            feedContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Δεν υπάρχουν διαθέσιμες μερίδες αυτή τη στιγμή. 😢</p>';
+        // Φιλτράρουμε τις αγγελίες ώστε να ΜΗΝ δείχνει τις δικές μας!
+        const feedListings = listings.filter(item => item.cook_id !== user.id);
+
+        if (feedListings.length === 0) {
+            feedContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Δεν υπάρχουν διαθέσιμες μερίδες από άλλους φοιτητές αυτή τη στιγμή. 😢</p>';
             return;
         }
 
-        listings.forEach(item => {
+        feedListings.forEach(item => {
             const isSoldOut = item.available_portions === 0;
             
             const card = document.createElement('div');
@@ -59,6 +62,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p><strong>⏰ Ώρα:</strong> ${new Date(item.pickup_time).toLocaleString('el-GR')}</p>
                     <p><strong>🍽️ Μερίδες:</strong> ${item.available_portions} / ${item.total_portions}</p>
                     ${item.notes ? `<p class="notes"><em>"${item.notes}"</em></p>` : ''}
+                    ${(() => {
+                        let allergensDisplay = '';
+                        if (item.allergens) {
+                            let parsed = item.allergens;
+                            if (typeof parsed === 'string') { try { parsed = JSON.parse(parsed); } catch(e) {} }
+                            if (Array.isArray(parsed) && parsed.length > 0) allergensDisplay = parsed.join(', ');
+                            else if (typeof parsed === 'string' && parsed.trim() !== '' && parsed !== '[]') allergensDisplay = parsed;
+                        }
+                        return allergensDisplay ? `<p style="margin-top: 0.5rem; color: #ef4444; font-size: 0.88rem; font-weight: 500;"><strong>⚠️ Αλλεργιογόνα:</strong> ${allergensDisplay}</p>` : '';
+                    })()}
                     
                     <button class="btn-order" 
                         onclick="requestPortion(${item.id})" 
@@ -103,7 +116,15 @@ async function fetchMyOrders() {
                 // --- Premium Rating Section ---
                 let ratingSection = '';
                 if (order.status === 'picked_up') {
-                    if (order.rating) {
+                    if (order.rating && Number(order.rating) === -1) {
+                        // Penalty: δεν αξιολόγησε εντός 48 ωρών
+                        ratingSection = `
+                            <div class="rating-display" style="background: linear-gradient(135deg, #fef2f2, #fee2e2); border-color: #fca5a5;">
+                                <span class="stars-show">⏰</span>
+                                <span class="rating-text" style="color: #dc2626;">Δεν αξιολόγησες εντός 48 ωρών — <strong>αφαιρέθηκε 1 credit</strong></span>
+                            </div>
+                        `;
+                    } else if (order.rating && Number(order.rating) > 0) {
                         // Ήδη αξιολογημένο — δείχνουμε visual stars
                         const ratingNum = Number(order.rating);
                         const starsVisual = '★'.repeat(ratingNum) + '☆'.repeat(5 - ratingNum);

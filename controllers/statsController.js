@@ -20,7 +20,7 @@ exports.getLeaderboard = async (req, res) => {
         // 3. Top 10 Μάγειρες (περισσότερες επιτυχημένες μερίδες)
         const [topCooks] = await pool.query(`
             SELECT u.name, COUNT(r.id) AS portions_given,
-                   ROUND(AVG(r.rating), 1) AS avg_rating
+                   ROUND(AVG(CASE WHEN r.rating > 0 THEN r.rating ELSE NULL END), 1) AS avg_rating
             FROM users u
             JOIN listings l ON u.id = l.cook_id
             JOIN requests r ON l.id = r.listing_id
@@ -38,7 +38,7 @@ exports.getLeaderboard = async (req, res) => {
             FROM listings l
             JOIN requests r ON l.id = r.listing_id
             JOIN users u ON l.cook_id = u.id
-            WHERE r.rating IS NOT NULL
+            WHERE r.rating IS NOT NULL AND r.rating > 0
             GROUP BY l.id
             ORDER BY avg_rating DESC, total_ratings DESC
             LIMIT 5
