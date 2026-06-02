@@ -240,7 +240,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="btn" style="background-color: #ef4444; padding: 0.5rem;" onclick="updateRequestStatus(${request.id}, 'rejected')">❌ Απόρριψη</button>
             `;
         } else if (request.status === 'approved') {
-            statusText = '<span style="color: #10b981; font-weight: 600;">Εγκρίθηκε ✅</span>';
+            statusText = '<span style="color: #3b82f6; font-weight: 600;">Προς Παράδοση 📦</span>';
+                actionButtons = `
+                    <button class="btn" style="background-color: #3b82f6; margin-bottom: 8px; padding: 0.5rem;" onclick="updateRequestStatus(${request.id}, 'picked_up')">🛍️ Παραδόθηκε</button>
+                    <button class="btn" style="background-color: #6b7280; padding: 0.5rem;" onclick="updateRequestStatus(${request.id}, 'no_show')">👻 Δεν ήρθε</button>
+            `;
+        }else if (request.status === 'picked_up') {
+            statusText = '<span style="color: #10b981; font-weight: 600;">Παραδόθηκε ✅</span>';
+        } else if (request.status === 'no_show') {
+            statusText = '<span style="color: #6b7280; font-weight: 600;">Δεν ήρθε 👻</span>';
         } else if (request.status === 'rejected') {
             statusText = '<span style="color: #ef4444; font-weight: 600;">Απορρίφθηκε ❌</span>';
         } else {
@@ -249,6 +257,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const formattedDate = new Date(request.created_at).toLocaleString('el-GR', { dateStyle: 'medium', timeStyle: 'short' });
 
+        let ratingHtml = '';
+        if (request.rating) {
+            const ratingNum = Number(request.rating);
+            const starsVisual = '★'.repeat(ratingNum) + '☆'.repeat(5 - ratingNum);
+            const ratingLabels = { 1: 'Κακό 😞', 2: 'Μέτριο 😐', 3: 'Καλό 🙂', 4: 'Πολύ Καλό 😊', 5: 'Εξαιρετικό 🤩' };
+            ratingHtml = `
+                <div class="rating-badge-cook">
+                    <span class="badge-label">Αξιολόγηση:</span>
+                    <span class="stars-show">${starsVisual}</span>
+                    <span class="badge-value">${ratingLabels[ratingNum] || ratingNum}</span>
+                </div>
+            `;
+        }
+
         card.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
                 <div>
@@ -256,6 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p style="color: var(--primary-color); font-weight: 600; margin-bottom: 0.5rem;">🍽️ ${request.listing_title}</p>
                     <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.2rem;">Κατάσταση: ${statusText}</p>
                     <p style="font-size: 0.8rem; color: var(--text-muted);">Ημερομηνία: ${formattedDate}</p>
+                    ${ratingHtml}
                 </div>
                 <div style="display: flex; flex-direction: column; min-width: 120px;">
                     ${actionButtons}

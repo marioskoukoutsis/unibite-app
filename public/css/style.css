@@ -202,3 +202,357 @@ body {
         flex: 1; /* Μοιράζονται τον χώρο ακριβώς στη μέση */
     }
 }
+
+/* =========================================
+   6. RATING SYSTEM (Premium Interactive Stars)
+   ========================================= */
+
+/* --- Rating Container (Wrapper) --- */
+.rating-container {
+    margin-top: 18px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 18px;
+}
+
+.rating-container .rating-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 12px;
+}
+
+/* --- Interactive Star Picker --- */
+.star-picker {
+    display: flex;
+    gap: 6px;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.star-picker .star {
+    font-size: 2rem;
+    color: #d4d4d8;
+    transition: color 0.15s ease, transform 0.15s ease, filter 0.15s ease;
+    user-select: none;
+    line-height: 1;
+}
+
+.star-picker .star:hover,
+.star-picker .star.hovered {
+    color: #facc15;
+    transform: scale(1.2);
+    filter: drop-shadow(0 0 4px rgba(250, 204, 21, 0.4));
+}
+
+.star-picker .star.selected {
+    color: #facc15;
+    filter: drop-shadow(0 0 6px rgba(250, 204, 21, 0.5));
+}
+
+.star-picker .star.selected.pulse {
+    animation: starPulse 0.4s ease;
+}
+
+@keyframes starPulse {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.35); }
+    100% { transform: scale(1); }
+}
+
+/* --- Rating Description Label --- */
+.rating-label {
+    min-height: 48px;
+    margin-bottom: 14px;
+    transition: opacity 0.2s ease;
+}
+
+.rating-label .label-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.rating-label .label-desc {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+/* Color coding per rating level */
+.rating-label[data-level="1"] .label-title { color: #ef4444; }
+.rating-label[data-level="2"] .label-title { color: #f97316; }
+.rating-label[data-level="3"] .label-title { color: #eab308; }
+.rating-label[data-level="4"] .label-title { color: #22c55e; }
+.rating-label[data-level="5"] .label-title { color: #10b981; }
+
+/* --- Submit Rating Button --- */
+.btn-submit-rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--font-main);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: linear-gradient(135deg, #facc15, #f59e0b);
+    color: #422006;
+    box-shadow: 0 2px 10px rgba(245, 158, 11, 0.25);
+}
+
+.btn-submit-rating:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
+}
+
+.btn-submit-rating:active {
+    transform: translateY(0);
+}
+
+.btn-submit-rating:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* --- Submitted Rating Display (Consumer Side) --- */
+.rating-display {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 14px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #fefce8, #fef9c3);
+    border: 1px solid #fde68a;
+    border-radius: 10px;
+}
+
+.rating-display .stars-show {
+    font-size: 1.3rem;
+    letter-spacing: 2px;
+    line-height: 1;
+}
+
+.rating-display .rating-text {
+    font-size: 0.85rem;
+    color: #92400e;
+    font-weight: 500;
+}
+
+/* --- Cook-side Rating Badge --- */
+.rating-badge-cook {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 8px 14px;
+    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    font-size: 0.88rem;
+}
+
+.rating-badge-cook .stars-show {
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+    line-height: 1;
+}
+
+.rating-badge-cook .badge-label {
+    color: #92400e;
+    font-weight: 600;
+    font-size: 0.82rem;
+}
+
+.rating-badge-cook .badge-value {
+    color: #b45309;
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+/* =========================================
+   7. STATS & LEADERBOARD PAGE
+   ========================================= */
+
+/* --- Overview Stat Cards --- */
+.stats-overview {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 1.5rem 1rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    box-shadow: var(--shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.08);
+}
+
+.stat-icon { font-size: 1.8rem; line-height: 1; }
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--primary-color);
+    letter-spacing: -1px;
+    line-height: 1.1;
+}
+
+.stat-label {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* --- Leaderboard Rows --- */
+.lb-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    background: var(--bg-color);
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.lb-row:hover {
+    border-color: var(--border-color);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.lb-row.lb-top:nth-child(1) {
+    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    border-color: #fde68a;
+}
+
+.lb-row.lb-top:nth-child(2) {
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    border-color: #e2e8f0;
+}
+
+.lb-row.lb-top:nth-child(3) {
+    background: linear-gradient(135deg, #fff7ed, #ffedd5);
+    border-color: #fed7aa;
+}
+
+.lb-medal { font-size: 1.6rem; width: 36px; text-align: center; flex-shrink: 0; line-height: 1; }
+
+.lb-rank {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--border-color);
+    color: var(--text-muted);
+    font-weight: 700;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.lb-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.lb-name { font-weight: 600; font-size: 0.95rem; color: var(--text-main); }
+
+.lb-rating {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.8rem;
+    color: #b45309;
+    font-weight: 500;
+}
+
+.lb-stars { color: #facc15; letter-spacing: 1px; font-size: 0.85rem; }
+.lb-no-rating { color: var(--text-muted); font-style: italic; font-size: 0.78rem; }
+
+.lb-portions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    min-width: 60px;
+}
+
+.lb-portions-count {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--primary-color);
+    line-height: 1;
+}
+
+.lb-portions-label {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+/* --- Top Meals Rows --- */
+.meal-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    background: var(--bg-color);
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.meal-row:hover {
+    border-color: var(--border-color);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.meal-info { display: flex; flex-direction: column; gap: 2px; }
+.meal-title { font-weight: 600; font-size: 0.95rem; color: var(--text-main); }
+.meal-cook { font-size: 0.8rem; color: var(--text-muted); }
+
+.meal-rating { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.meal-stars { color: #facc15; font-size: 1rem; letter-spacing: 1px; }
+.meal-avg { font-weight: 700; font-size: 1rem; color: #b45309; }
+.meal-count { font-size: 0.75rem; color: var(--text-muted); }
+
+/* --- Stats Responsive --- */
+@media (max-width: 768px) {
+    .stats-overview {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    .stat-card {
+        flex-direction: row;
+        justify-content: center;
+        gap: 12px;
+        padding: 1rem;
+    }
+    .stat-value { font-size: 1.5rem; }
+    .lb-row { padding: 12px; gap: 10px; }
+    .meal-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}

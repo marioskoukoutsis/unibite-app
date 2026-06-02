@@ -48,6 +48,17 @@ exports.updateRequestStatus = async (req, res) => {
             );
         }
 
+        if (status === 'no_show') {
+            await pool.query(
+                'UPDATE users SET credits = credits - 1 WHERE id = ?',
+                [request.consumer_id]
+            );
+            await pool.query(
+                'UPDATE listings SET available_portions = available_portions + 1 WHERE id = ?',
+                [request.listing_id]
+            );
+        }
+
         res.json({ message: `Η κατάσταση του αιτήματος άλλαξε σε: ${status}` });
     } catch (error) {
         console.error('Σφάλμα στο updateRequestStatus:', error);
@@ -58,12 +69,13 @@ exports.updateRequestStatus = async (req, res) => {
 exports.getRequestsForCook = async (req, res) => {
     try {
         const cook_id = req.query.cook_id;
+        const consumer_id = req.query.consumer_id;
         let query = '';
         let params = [];
 
         if (cook_id) {
             query = `
-                SELECT r.id, r.status, r.created_at, r.listing_id,
+                SELECT r.id, r.status, r.created_at, r.listing_id, r.rating,
                        l.title AS listing_title, 
                        u.name AS consumer_name, u.id AS consumer_id 
                 FROM requests r
@@ -95,5 +107,44 @@ exports.getRequestsForCook = async (req, res) => {
     } catch (error) {
         console.error('Σφάλμα στο getRequests:', error);
         res.status(500).json({ error: 'Πρόβλημα κατά τη λήψη των αιτημάτων.' });
+    }
+};
+
+exports.rateRequest = async (req, res) => {
+    try {
+        const requestId = req.params.id;
+        const { rating } = req.body;
+
+        if (rating < 1 || rating > 5) {
+            return res.status(400).json({ error: 'Η βαθμολογία πρέπει να είναι μεταξύ 1 και 5.' });
+        }
+
+        const [requests] = await pool.query(`
+            SELECT r.*, l.cook_id 
+            FROM requests r
+            JOIN listings l ON r.listing_id = l.id
+            WHERE r.id = ?
+        `, [requestId]);
+
+        if (requests.length === 0) return res.status(404).json({ error: 'Το αίτημα δεν βρέθηκε.' });
+        const request = requests[0];
+
+        if (request.status !== 'picked_up') {
+            return res.status(400).json({ error: 'Μπορείς να βαθμολογήσεις μόνο μετά την παραλαβή.' });
+        }
+        if (request.rating !== null) {
+            return res.status(400).json({ error: 'Έχεις ήδη βαθμολογήσει αυτό το αίτημα.' });
+        }
+
+        await pool.query('UPDATE requests SET rating = ? WHERE id = ?', [rating, requestId]);
+
+        if (rating >= 4) {
+            await pool.query('UPDATE users SET credits = credits + 1 WHERE id = ?', [request.cook_id]);
+        }
+
+        res.json({ message: 'Η βαθμολογία καταχωρήθηκε επιτυχώς.' });
+    } catch (error) {
+        console.error('Σφάλμα στο rateRequest:', error);
+        res.status(500).json({ error: 'Πρόβλημα κατά την αποθήκευση της βαθμολογίας.' });
     }
 };
