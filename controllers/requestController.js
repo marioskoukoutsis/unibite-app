@@ -9,17 +9,26 @@ exports.createRequest = async (req, res) => {
             return res.status(400).json({ error: 'Δεν έχεις αρκετούς πόντους.. Πρέπει να μοιραστείς κι εσύ φαγητό.' });
         }
 
-        const [listing] = await pool.query('SELECT available_portions FROM listings WHERE id = ?', [listing_id]);
+        const [listing] = await pool.query('SELECT available_portions, cook_id FROM listings WHERE id = ?', [listing_id]);
+        if (listing[0].cook_id === consumer_id) {
+            return res.status(400).json({ error: 'Δεν μπορείς να κάνεις αίτημα για τη δική σου αγγελία.' });
+        }
         if (listing[0].available_portions <= 0) {
             return res.status(400).json({ error: 'Δεν υπάρχουν διαθέσιμες μερίδες' });
+        }
+
+        const [existing] = await pool.query(
+            `SELECT id FROM requests WHERE listing_id = ? AND consumer_id = ? AND status IN ('pending', 'approved')`,
+            [listing_id, consumer_id]
+        );
+        if (existing.length > 0) {
+            return res.status(400).json({ error: 'Έχεις ήδη κάνει αίτημα για αυτή την αγγελία.' });
         }
 
         await pool.query(
             'INSERT INTO requests (listing_id, consumer_id, status) VALUES (?, ?, ?)',
             [listing_id, consumer_id, 'pending']
         );
-
-        await pool.query('UPDATE listings SET available_portions = available_portions - 1 WHERE id = ?', [listing_id]);
 
         res.status(201).json({ message: 'Το αίτημα στάλθηκε επιτυχώς!' });
     } catch (error) {
@@ -33,30 +42,41 @@ exports.updateRequestStatus = async (req, res) => {
         const requestId = req.params.id;
         const { status } = req.body;
 
-        const [requests] = await pool.query('SELECT * FROM requests WHERE id = ?', [requestId]);
+        const [requests] = await pool.query(`
+            SELECT r.*, l.cook_id, l.pickup_time
+            FROM requests r
+            JOIN listings l ON r.listing_id = l.id
+            WHERE r.id = ?
+        `, [requestId]);
         if (requests.length === 0) {
             return res.status(404).json({ error: 'Το αίτημα δεν βρέθηκε.' });
         }
 
         const request = requests[0];
+
+        if (status === 'picked_up' || status === 'no_show') {
+            if (new Date() < new Date(request.pickup_time)) {
+                return res.status(400).json({ error: 'Δεν μπορείς να ορίσεις την κατάσταση παραλαβής πριν την ώρα παραλαβής.' });
+            }
+        }
+
         await pool.query('UPDATE requests SET status = ? WHERE id = ?', [status, requestId]);
 
-        if (status === 'rejected') {
-            await pool.query(
-                'UPDATE listings SET available_portions = available_portions + 1 WHERE id = ?',
-                [request.listing_id]
-            );
+        if (status === 'picked_up') {
+            await pool.query('UPDATE users SET credits = credits + 1 WHERE id = ?', [request.cook_id]);
+        }
+
+        if (status === 'approved') {
+            const [listing] = await pool.query('SELECT available_portions FROM listings WHERE id = ?', [request.listing_id]);
+            if (listing[0].available_portions <= 0) {
+                return res.status(400).json({ error: 'Δεν υπάρχουν πλέον διαθέσιμες μερίδες.' });
+            }
+            await pool.query('UPDATE listings SET available_portions = available_portions - 1 WHERE id = ?', [request.listing_id]);
         }
 
         if (status === 'no_show') {
-            await pool.query(
-                'UPDATE users SET credits = credits - 1 WHERE id = ?',
-                [request.consumer_id]
-            );
-            await pool.query(
-                'UPDATE listings SET available_portions = available_portions + 1 WHERE id = ?',
-                [request.listing_id]
-            );
+            await pool.query('UPDATE users SET credits = credits - 1 WHERE id = ?', [request.consumer_id]);
+            await pool.query('UPDATE listings SET available_portions = available_portions + 1 WHERE id = ?', [request.listing_id]);
         }
 
         res.json({ message: `Η κατάσταση του αιτήματος άλλαξε σε: ${status}` });
@@ -76,8 +96,8 @@ exports.getRequestsForCook = async (req, res) => {
         if (cook_id) {
             query = `
                 SELECT r.id, r.status, r.created_at, r.listing_id, r.rating,
-                       l.title AS listing_title, 
-                       u.name AS consumer_name, u.id AS consumer_id 
+                       l.title AS listing_title, l.pickup_location, l.pickup_time,
+                       u.name AS consumer_name, u.id AS consumer_id
                 FROM requests r
                 JOIN listings l ON r.listing_id = l.id
                 JOIN users u ON r.consumer_id = u.id

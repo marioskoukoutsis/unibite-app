@@ -151,14 +151,16 @@ exports.deleteListing = async (req, res) => {
     try {
         const listingId = req.params.id;
 
-        // SOFT DELETE: Δεν κάνουμε "DELETE FROM", απλά αλλάζουμε το status σε 'deleted'
-        const query = `UPDATE listings SET status = 'deleted' WHERE id = ?`;
-
-        const [result] = await pool.query(query, [listingId]);
+        const [result] = await pool.query(`UPDATE listings SET status = 'deleted' WHERE id = ?`, [listingId]);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'Η αγγελία δεν βρέθηκε.' });
         }
+
+        await pool.query(
+            `UPDATE requests SET status = 'rejected' WHERE listing_id = ? AND status IN ('pending', 'approved')`,
+            [listingId]
+        );
 
         res.json({ message: 'Η αγγελία διαγράφηκε επιτυχώς!' });
 

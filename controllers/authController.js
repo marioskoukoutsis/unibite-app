@@ -72,6 +72,18 @@ exports.login = async (req, res) => {
     }
 };
 
+// --- ΛΗΨΗ ΧΡΗΣΤΗ (GET USER) ---
+exports.getUser = async (req, res) => {
+    try {
+        const [users] = await pool.query('SELECT id, name, email, role, credits FROM users WHERE id = ?', [req.params.id]);
+        if (users.length === 0) return res.status(404).json({ error: 'Χρήστης δεν βρέθηκε.' });
+        res.json(users[0]);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Πρόβλημα κατά την ανάκτηση χρήστη.' });
+    }
+};
+
 // --- ΕΠΕΞΕΡΓΑΣΙΑ ΛΟΓΑΡΙΑΣΜΟΥ (UPDATE) ---
 exports.updateAccount = async (req, res) => {
     try {
