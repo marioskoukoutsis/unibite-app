@@ -48,6 +48,13 @@ exports.updateRequestStatus = async (req, res) => {
             );
         }
 
+        if (status === 'no_show') {
+            await pool.query(
+                'UPDATE users SET credits = credits - 1 WHERE id = ?',
+                [request.consumer_id]
+            );
+        }
+
         res.json({ message: `Η κατάσταση του αιτήματος άλλαξε σε: ${status}` });
     } catch (error) {
         console.error('Σφάλμα στο updateRequestStatus:', error);

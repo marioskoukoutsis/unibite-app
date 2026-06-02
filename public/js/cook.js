@@ -240,7 +240,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="btn" style="background-color: #ef4444; padding: 0.5rem;" onclick="updateRequestStatus(${request.id}, 'rejected')">❌ Απόρριψη</button>
             `;
         } else if (request.status === 'approved') {
-            statusText = '<span style="color: #10b981; font-weight: 600;">Εγκρίθηκε ✅</span>';
+            statusText = '<span style="color: #3b82f6; font-weight: 600;">Προς Παράδοση 📦</span>';
+                actionButtons = `
+                    <button class="btn" style="background-color: #3b82f6; margin-bottom: 8px; padding: 0.5rem;" onclick="updateRequestStatus(${request.id}, 'picked_up')">🛍️ Παραδόθηκε</button>
+                    <button class="btn" style="background-color: #6b7280; padding: 0.5rem;" onclick="updateRequestStatus(${request.id}, 'no_show')">👻 Δεν ήρθε</button>
+            `;
+        }else if (request.status === 'picked_up') {
+            statusText = '<span style="color: #10b981; font-weight: 600;">Παραδόθηκε ✅</span>';
+        } else if (request.status === 'no_show') {
+            statusText = '<span style="color: #6b7280; font-weight: 600;">Δεν ήρθε 👻</span>';
         } else if (request.status === 'rejected') {
             statusText = '<span style="color: #ef4444; font-weight: 600;">Απορρίφθηκε ❌</span>';
         } else {
