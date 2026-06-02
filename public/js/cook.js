@@ -257,6 +257,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const formattedDate = new Date(request.created_at).toLocaleString('el-GR', { dateStyle: 'medium', timeStyle: 'short' });
 
+        let ratingHtml = '';
+        if (request.rating) {
+            const ratingNum = Number(request.rating);
+            const starsVisual = '★'.repeat(ratingNum) + '☆'.repeat(5 - ratingNum);
+            const ratingLabels = { 1: 'Κακό 😞', 2: 'Μέτριο 😐', 3: 'Καλό 🙂', 4: 'Πολύ Καλό 😊', 5: 'Εξαιρετικό 🤩' };
+            ratingHtml = `
+                <div class="rating-badge-cook">
+                    <span class="badge-label">Αξιολόγηση:</span>
+                    <span class="stars-show">${starsVisual}</span>
+                    <span class="badge-value">${ratingLabels[ratingNum] || ratingNum}</span>
+                </div>
+            `;
+        }
+
         card.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
                 <div>
@@ -264,6 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p style="color: var(--primary-color); font-weight: 600; margin-bottom: 0.5rem;">🍽️ ${request.listing_title}</p>
                     <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.2rem;">Κατάσταση: ${statusText}</p>
                     <p style="font-size: 0.8rem; color: var(--text-muted);">Ημερομηνία: ${formattedDate}</p>
+                    ${ratingHtml}
                 </div>
                 <div style="display: flex; flex-direction: column; min-width: 120px;">
                     ${actionButtons}

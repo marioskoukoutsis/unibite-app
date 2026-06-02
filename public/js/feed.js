@@ -63,8 +63,173 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const ordersContainer = document.getElementById('my-orders-container');
+
+async function fetchMyOrders() {
+    if (!ordersContainer) return;
+    try {
+        const response = await fetch(`/api/requests?consumer_id=${user.id}`);
+        const orders = await response.json();
+
+        ordersContainer.innerHTML = '';
+        if (orders.length === 0) {
+            ordersContainer.innerHTML = '<p style="text-align: center;">Δεν έχεις κάνει κανένα αίτημα ακόμα. 😢</p>';
+            return;
+        }
+
+        orders.forEach(order => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.style.marginTop = '1rem';
+            card.style.padding = '1rem';
+            let statusText = '';
+            if (order.status === 'pending') statusText = '<span style="color: #f59e0b; font-weight: bold;">Σε Εκκρεμότητα ⏳</span>';
+                else if (order.status === 'approved') statusText = '<span style="color: #3b82f6; font-weight: bold;">Εγκρίθηκε - Προς Παράδοση 📦</span>';
+                else if (order.status === 'picked_up') statusText = '<span style="color: #10b981; font-weight: bold;">Παραλήφθηκε ✅ (Καλή όρεξη!)</span>';
+                else if (order.status === 'no_show') statusText = '<span style="color: #ef4444; font-weight: bold;">Ακυρώθηκε (No-show) ❌</span>';
+                else if (order.status === 'rejected') statusText = '<span style="color: #ef4444; font-weight: bold;">Απορρίφθηκε ❌</span>';
+                else statusText = order.status;
+                
+                const pickupDate = new Date(order.pickup_time).toLocaleString('el-GR', { dateStyle: 'short', timeStyle: 'short' });
+
+                // --- Premium Rating Section ---
+                let ratingSection = '';
+                if (order.status === 'picked_up') {
+                    if (order.rating) {
+                        // Ήδη αξιολογημένο — δείχνουμε visual stars
+                        const ratingNum = Number(order.rating);
+                        const starsVisual = '★'.repeat(ratingNum) + '☆'.repeat(5 - ratingNum);
+                        const ratingLabels = { 1: 'Κακό', 2: 'Μέτριο', 3: 'Καλό', 4: 'Πολύ Καλό', 5: 'Εξαιρετικό' };
+                        ratingSection = `
+                            <div class="rating-display">
+                                <span class="stars-show">${starsVisual}</span>
+                                <span class="rating-text">Η αξιολόγησή σου: <strong>${ratingLabels[ratingNum] || ratingNum}</strong> (${ratingNum}/5)</span>
+                            </div>
+                        `;
+                    } else {
+                        // Δεν έχει αξιολογηθεί ακόμα — interactive star picker
+                        ratingSection = `
+                            <div class="rating-container">
+                                <p class="rating-title">✨ Πώς ήταν το γεύμα;</p>
+                                <div class="star-picker" id="star-picker-${order.id}">
+                                    <span class="star" data-value="1">★</span>
+                                    <span class="star" data-value="2">★</span>
+                                    <span class="star" data-value="3">★</span>
+                                    <span class="star" data-value="4">★</span>
+                                    <span class="star" data-value="5">★</span>
+                                </div>
+                                <div class="rating-label" id="rating-label-${order.id}">
+                                    <p class="label-desc" style="color: #a1a1aa;">Πάτα σε ένα αστέρι για να αξιολογήσεις</p>
+                                </div>
+                                <input type="hidden" id="rating-${order.id}" value="0">
+                                <button class="btn-submit-rating" id="btn-rating-${order.id}" disabled onclick="submitRating(${order.id})">
+                                    Αποστολή Αξιολόγησης
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+
+                card.innerHTML = `
+                    <h4 style="margin-bottom: 0.5rem; color: var(--text-main);">🍽️ ${order.listing_title}</h4>
+                    <p style="font-size: 0.9rem; margin-bottom: 0.3rem;"><strong>Μάγειρας:</strong> ${order.cook_name}</p>
+                    <p style="font-size: 0.9rem; margin-bottom: 0.3rem;"><strong>Παραλαβή:</strong> ${order.pickup_location} | ${pickupDate}</p>
+                    <p style="font-size: 0.95rem; margin-top: 0.5rem;"><strong>Κατάσταση:</strong> ${statusText}</p>
+                    ${ratingSection}
+                `;
+            ordersContainer.appendChild(card);
+        });
+
+        // Αφού μπουν οι κάρτες στο DOM, ενεργοποιούμε τα interactive stars
+        initStarPickers();
+
+    } catch (error) {
+        console.error('Σφάλμα fetch:', error);
+        ordersContainer.innerHTML = '<p>Πρόβλημα στη φόρτωση των αιτημάτων σου.</p>';
+    }
+}
+
     fetchListings();
+    fetchMyOrders();
 });
+
+// --- Rating Labels Configuration ---
+const RATING_LEVELS = {
+    1: { title: 'Κακό 😞',         desc: 'Δεν ήταν αυτό που περίμενα. Υπάρχουν πολλά περιθώρια βελτίωσης.' },
+    2: { title: 'Μέτριο 😐',       desc: 'Εντάξει, αλλά χρειάζεται βελτίωση σε γεύση ή ποσότητα.' },
+    3: { title: 'Καλό 🙂',         desc: 'Αρκετά ικανοποιητικό! Κάλυψε τις βασικές προσδοκίες μου.' },
+    4: { title: 'Πολύ Καλό 😊',    desc: 'Νόστιμο και σε καλή ποσότητα. Σίγουρα θα ξαναπαρήγγελνα.' },
+    5: { title: 'Εξαιρετικό 🤩',   desc: 'Σπιτικό αριστούργημα! Γεύση, παρουσίαση, τα πάντα τέλεια.' }
+};
+
+// --- Star Picker Initialization ---
+function initStarPickers() {
+    document.querySelectorAll('.star-picker').forEach(picker => {
+        const orderId = picker.id.replace('star-picker-', '');
+        const stars = picker.querySelectorAll('.star');
+        const hiddenInput = document.getElementById(`rating-${orderId}`);
+        const labelDiv = document.getElementById(`rating-label-${orderId}`);
+        const submitBtn = document.getElementById(`btn-rating-${orderId}`);
+
+        stars.forEach(star => {
+            const val = Number(star.dataset.value);
+
+            // Hover: φωτίζουμε όλα τα αστέρια μέχρι αυτό + δείχνουμε label
+            star.addEventListener('mouseenter', () => {
+                stars.forEach(s => {
+                    s.classList.toggle('hovered', Number(s.dataset.value) <= val);
+                });
+                const level = RATING_LEVELS[val];
+                labelDiv.setAttribute('data-level', val);
+                labelDiv.innerHTML = `
+                    <p class="label-title">${level.title}</p>
+                    <p class="label-desc">${level.desc}</p>
+                `;
+            });
+
+            // Click: κλειδώνουμε την επιλογή
+            star.addEventListener('click', () => {
+                hiddenInput.value = val;
+                submitBtn.disabled = false;
+                stars.forEach(s => {
+                    const sv = Number(s.dataset.value);
+                    s.classList.toggle('selected', sv <= val);
+                    // Pulse animation
+                    if (sv <= val) {
+                        s.classList.remove('pulse');
+                        void s.offsetWidth; // force reflow
+                        s.classList.add('pulse');
+                    }
+                });
+                const level = RATING_LEVELS[val];
+                labelDiv.setAttribute('data-level', val);
+                labelDiv.innerHTML = `
+                    <p class="label-title">${level.title}</p>
+                    <p class="label-desc">${level.desc}</p>
+                `;
+            });
+        });
+
+        // Mouse leave: επιστρέφουμε στο selected state
+        picker.addEventListener('mouseleave', () => {
+            const currentVal = Number(hiddenInput.value);
+            stars.forEach(s => {
+                s.classList.remove('hovered');
+            });
+            if (currentVal > 0) {
+                const level = RATING_LEVELS[currentVal];
+                labelDiv.setAttribute('data-level', currentVal);
+                labelDiv.innerHTML = `
+                    <p class="label-title">${level.title}</p>
+                    <p class="label-desc">${level.desc}</p>
+                `;
+            } else {
+                labelDiv.removeAttribute('data-level');
+                labelDiv.innerHTML = `<p class="label-desc" style="color: #a1a1aa;">Πάτα σε ένα αστέρι για να αξιολογήσεις</p>`;
+            }
+        });
+    });
+}
 
 // 3. Λειτουργία Κουμπιού "Θέλω Μερίδα"
 window.requestPortion = async function(listingId) {
@@ -96,5 +261,40 @@ window.requestPortion = async function(listingId) {
     } catch (err) {
         console.error(err);
         alert("Σφάλμα σύνδεσης με τον server.");
+    }
+};
+
+window.submitRating = async function(orderId) {
+    const ratingValue = document.getElementById(`rating-${orderId}`).value;
+
+    if (!ratingValue || ratingValue === '0') {
+        alert('Παρακαλώ επίλεξε μια βαθμολογία πρώτα.');
+        return;
+    }
+
+    const btn = document.getElementById(`btn-rating-${orderId}`);
+    btn.disabled = true;
+    btn.textContent = 'Αποστολή...';
+
+    try {
+        const response = await fetch(`/api/requests/${orderId}/rating`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rating: Number(ratingValue) })
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+            alert('Η βαθμολογία σου καταχωρήθηκε! Ευχαριστούμε για την αξιολόγηση. 🙏');
+            location.reload();
+        } else {
+            btn.disabled = false;
+            btn.textContent = 'Αποστολή Αξιολόγησης';
+            alert(result.error || 'Κάτι πήγε στραβά με την αποστολή της βαθμολογίας.');
+        }
+    } catch (error) {
+        btn.disabled = false;
+        btn.textContent = 'Αποστολή Αξιολόγησης';
+        alert('Σφάλμα σύνδεσης με τον server.');
     }
 };
