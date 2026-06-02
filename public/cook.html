@@ -22,8 +22,16 @@
 
 <div class="container">
 
+    <!-- Header -->
+    <div style="text-align: center; margin-bottom: 2.5rem;">
+        <h1 style="font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 0.5rem;">
+            👨‍🍳 Ο Πίνακάς μου
+        </h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">Μοιράσου το φαγητό σου και διαχειρίσου τα αιτήματα</p>
+    </div>
+
     <div class="card">
-        <h2 id="form-title" style="margin-bottom: 2rem;">Δημιουργία Αγγελίας</h2>
+        <h2 id="form-title" style="font-size: 1.3rem; font-weight: 700; margin-bottom: 1.5rem;">📝 Δημιουργία Αγγελίας</h2>
 
         <form id="create-listing-form">
             <input type="hidden" id="edit-listing-id" value="">
@@ -80,13 +88,17 @@
         </div>
     </div>
 
-    <h2 style="margin-top: 3.5rem; margin-bottom: 1.5rem; font-size: 1.4rem;">Οι Ενεργές Αγγελίες μου</h2>
-    <div id="my-listings-container">
+    <div class="card" style="margin-top: 1.5rem;">
+        <h2 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 1.2rem;">🍽️ Οι Ενεργές Αγγελίες μου</h2>
+        <div id="my-listings-container">
+        </div>
     </div>
 
-    <h2 style="margin-top: 3.5rem; margin-bottom: 1.5rem; font-size: 1.4rem;">Οι Αιτήσεις μου</h2>
-    <div id="requests-container">
-        <p style="color: var(--text-muted); text-align: center;">Φόρτωση αιτημάτων...</p>
+    <div class="card" style="margin-top: 1.5rem; margin-bottom: 2rem;">
+        <h2 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 1.2rem;">📋 Οι Αιτήσεις μου</h2>
+        <div id="requests-container">
+            <p style="color: var(--text-muted); text-align: center;">Φόρτωση αιτημάτων...</p>
+        </div>
     </div>
 </div>
 

@@ -45,8 +45,12 @@ exports.createListing = async (req, res) => {
                 const buffer = Buffer.from(imageData, 'base64');
                 const fileName = Date.now() + '.' + extension; // π.χ. 16543245.png
 
-                // Ορίζουμε πού θα αποθηκευτεί (πρέπει να έχεις φτιάξει τον φάκελο public/uploads)
-                const filePath = path.join(__dirname, '../public/uploads', fileName);
+                // Ορίζουμε πού θα αποθηκευτεί, και αν δεν υπάρχει ο φάκελος τον δημιουργούμε
+                const uploadDir = path.join(__dirname, '../public/uploads');
+                if (!fs.existsSync(uploadDir)) {
+                    fs.mkdirSync(uploadDir, { recursive: true });
+                }
+                const filePath = path.join(uploadDir, fileName);
 
                 // Γράφουμε το αρχείο στον δίσκο!
                 fs.writeFileSync(filePath, buffer);
@@ -107,7 +111,12 @@ exports.updateListing = async (req, res) => {
                 // Πρέπει να έχουμε κάνει require('fs') και require('path') πάνω-πάνω στο αρχείο (το έχουμε ήδη)
                 const fs = require('fs');
                 const path = require('path');
-                const filePath = path.join(__dirname, '../public/uploads', fileName);
+                
+                const uploadDir = path.join(__dirname, '../public/uploads');
+                if (!fs.existsSync(uploadDir)) {
+                    fs.mkdirSync(uploadDir, { recursive: true });
+                }
+                const filePath = path.join(uploadDir, fileName);
 
                 fs.writeFileSync(filePath, buffer);
                 photo_url = '/uploads/' + fileName; // Αντικαθιστούμε με το νέο link!

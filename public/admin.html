@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UniBite - Admin Dashboard</title>
+    <meta name="description" content="Πίνακας ελέγχου διαχειριστή UniBite — στατιστικά, χρήστες, αγγελίες και αιτήματα.">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -12,7 +13,7 @@
     <a href="index.html" class="navbar-brand">
         <img src="images/unibite-logo.png" alt="UniBite Logo" class="logo-img-nav">
     </a>
-    <div class="navbar-links" style="display: flex; align-items: center;">
+    <div class="navbar-links">
         <a href="feed.html">Feed</a>
         <a href="cook.html">Ο Πίνακάς μου</a>
         <a href="stats.html">Στατιστικά</a>
@@ -21,29 +22,91 @@
     </div>
 </nav>
 
-<div class="container">
-    <h2 style="margin-bottom: 2rem; text-align: center;">Πίνακας Ελέγχου Διαχειριστή</h2>
+<div class="container" style="max-width: 850px;">
 
-    <div class="card" style="margin-bottom: 2rem;">
-        <h3 style="margin-bottom: 1rem; color: var(--text-main);">Στατιστικά Μήνα</h3>
-        <p style="font-size: 1.1rem;">Συνολικές μερίδες που διαμοιράστηκαν επιτυχώς: <strong id="total-portions" style="color: var(--primary-color); font-size: 1.5rem;">...</strong></p>
+    <!-- Header -->
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h1 style="font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 0.5rem;">
+            🛡️ Πίνακας Ελέγχου Διαχειριστή
+        </h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">Πλήρης εποπτεία και διαχείριση της πλατφόρμας.</p>
     </div>
 
-    <div class="card">
-        <h3 style="margin-bottom: 1rem; color: var(--text-main);">Κατάταξη (Leaderboard)</h3>
-        
-        <div style="margin-bottom: 1.5rem;">
-            <h4 style="color: var(--text-muted); margin-bottom: 0.5rem;">🏆 Top Donor (Περισσότερες Προσφορές)</h4>
-            <p id="top-donor" style="font-weight: 600; font-size: 1.1rem;">Φόρτωση...</p>
+    <!-- Tab Navigation -->
+    <div class="admin-tabs" id="admin-tabs">
+        <button class="admin-tab active" data-tab="tab-stats">📊 Στατιστικά</button>
+        <button class="admin-tab" data-tab="tab-users">👥 Χρήστες</button>
+        <button class="admin-tab" data-tab="tab-listings">🍽️ Αγγελίες</button>
+        <button class="admin-tab" data-tab="tab-requests">📋 Αιτήματα</button>
+    </div>
+
+    <!-- ========== TAB: Στατιστικά ========== -->
+    <div class="admin-tab-content active" id="tab-stats">
+
+        <div class="stats-overview">
+            <div class="stat-card">
+                <span class="stat-icon">🍽️</span>
+                <span class="stat-value" id="admin-total-portions">—</span>
+                <span class="stat-label">Μερίδες Μήνα</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon">🏆</span>
+                <span class="stat-value" id="admin-top-donor-count">—</span>
+                <span class="stat-label">Top Donor</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon">⭐</span>
+                <span class="stat-value" id="admin-top-meals-count">—</span>
+                <span class="stat-label">Αξιολ. Γεύματα</span>
+            </div>
         </div>
 
-        <div>
-            <h4 style="color: var(--text-muted); margin-bottom: 0.5rem;">⭐ Γεύματα με την Υψηλότερη Αξιολόγηση</h4>
-            <ul id="top-meals" style="list-style-type: none; padding: 0;">
-                <li>Φόρτωση...</li>
-            </ul>
+        <div class="card" style="margin-bottom: 2rem;">
+            <h2 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 1.2rem;">
+                🏆 Top Donor του Μήνα
+            </h2>
+            <div id="admin-top-donor-container">
+                <p style="color: var(--text-muted); text-align: center;">Φόρτωση...</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 1.2rem;">
+                ⭐ Γεύματα με τις Καλύτερες Κριτικές
+            </h2>
+            <div id="admin-top-meals-container">
+                <p style="color: var(--text-muted); text-align: center;">Φόρτωση...</p>
+            </div>
         </div>
     </div>
+
+    <!-- ========== TAB: Χρήστες ========== -->
+    <div class="admin-tab-content" id="tab-users">
+        <div class="admin-search-bar">
+            <input type="text" id="search-users" class="admin-search-input" placeholder="🔍 Αναζήτηση χρήστη...">
+        </div>
+        <div id="admin-users-container">
+            <p style="color: var(--text-muted); text-align: center;">Φόρτωση χρηστών...</p>
+        </div>
+    </div>
+
+    <!-- ========== TAB: Αγγελίες ========== -->
+    <div class="admin-tab-content" id="tab-listings">
+        <div class="admin-search-bar">
+            <input type="text" id="search-listings" class="admin-search-input" placeholder="🔍 Αναζήτηση αγγελίας...">
+        </div>
+        <div id="admin-listings-container">
+            <p style="color: var(--text-muted); text-align: center;">Φόρτωση αγγελιών...</p>
+        </div>
+    </div>
+
+    <!-- ========== TAB: Αιτήματα ========== -->
+    <div class="admin-tab-content" id="tab-requests">
+        <div id="admin-requests-container">
+            <p style="color: var(--text-muted); text-align: center;">Φόρτωση αιτημάτων...</p>
+        </div>
+    </div>
+
 </div>
 
 <script src="js/admin.js"></script>

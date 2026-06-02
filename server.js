@@ -22,6 +22,7 @@ const authRoutes = require('./routes/authRoutes');
 const requestRoutes = require('./routes/requestRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const statsRoutes = require('./routes/statsRoutes');
+const { startPenaltyScheduler } = require('./penaltyScheduler');
 
 // Χρήση των Routes
 app.use('/api/listings', listingRoutes);
@@ -36,4 +37,5 @@ app.get('/', (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`🚀 Ο Server τρέχει στο http://localhost:${PORT}`);
+    startPenaltyScheduler();
 });
