@@ -7,6 +7,23 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    // --- Εμφάνιση Admin Portal στο Navigation αν είναι Admin ---
+    if (user.role === 'admin') {
+        const navLinks = document.querySelector('.navbar-links');
+        if (navLinks) {
+            const adminLink = document.createElement('a');
+            adminLink.href = 'admin.html';
+            adminLink.textContent = 'Admin Portal';
+            adminLink.style.cssText = 'color: var(--text-main); font-weight: 700;';
+            const accountLink = navLinks.querySelector('a[href="account.html"]');
+            if (accountLink) {
+                navLinks.insertBefore(adminLink, accountLink);
+            } else {
+                navLinks.appendChild(adminLink);
+            }
+        }
+    }
+
     const feedContainer = document.getElementById('feed-container');
 
     async function fetchAndDisplayCredits() {

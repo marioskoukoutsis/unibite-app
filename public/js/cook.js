@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const adminLink = document.createElement('a');
         adminLink.href = 'admin.html';
         adminLink.textContent = 'Admin Portal';
-        adminLink.style.cssText = 'color: #3f3f46; font-weight: 700; margin-left: 2.5rem;';
+        adminLink.style.cssText = 'color: var(--text-main); font-weight: 700;';
 
         // Το τοποθετούμε πριν από τον "Λογαριασμό μου"
         const accountLink = navLinks.querySelector('a[href="account.html"]');
