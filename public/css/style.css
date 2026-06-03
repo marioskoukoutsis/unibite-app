@@ -39,12 +39,23 @@ body {
    2. ΚΟΙΝΟ NAVIGATION BAR & ΛΟΓΟΤΥΠΟ
    ========================================= */
 .navbar {
-    background-color: var(--bg-color); /* Ίδιο με το background για να γίνεται "ένα" */
-    padding: 1.5rem 5%;
+    background-color: rgba(250, 250, 250, 0.85); /* Ημι-διαφανές για glassmorphism */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 1rem 5%;
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid var(--border-color);
+    transition: box-shadow 0.3s ease;
+}
+
+.navbar.scrolled {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
 
 /* Το Νέο Minimal Λογότυπο */
@@ -779,5 +790,57 @@ body {
     .admin-btn {
         flex: 1;
         text-align: center;
+    }
+}
+
+/* =========================================
+   9. SCROLL-TO-TOP BUTTON
+   ========================================= */
+.scroll-to-top {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--text-main);
+    color: white;
+    border: none;
+    font-size: 1.3rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(12px) scale(0.9);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 99;
+}
+
+.scroll-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+.scroll-to-top:hover {
+    background: var(--primary-color);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 24px rgba(224, 93, 58, 0.3);
+}
+
+.scroll-to-top:active {
+    transform: translateY(0) scale(0.95);
+}
+
+@media (max-width: 768px) {
+    .scroll-to-top {
+        bottom: 1.2rem;
+        right: 1.2rem;
+        width: 42px;
+        height: 42px;
+        font-size: 1.1rem;
     }
 }
