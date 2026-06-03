@@ -53,9 +53,9 @@
                 </label>
             </div>
 
-            <div style="display: flex; gap: 10px;">
-                <button type="submit" class="btn" style="flex: 2;">Αποθήκευση Αλλαγών</button>
-                <button type="button" id="logout-btn" class="btn" style="flex: 1; background-color: transparent; color: #ef4444; border: 1px solid #fca5a5; box-shadow: none;">Αποσύνδεση</button>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button type="submit" class="btn" style="flex: 2; min-width: 200px;">Αποθήκευση Αλλαγών</button>
+                <button type="button" id="logout-btn" class="btn" style="flex: 1; min-width: 120px; background-color: transparent; color: #ef4444; border: 1px solid #fca5a5; box-shadow: none;">Αποσύνδεση</button>
             </div>
         </form>
 
@@ -77,7 +77,7 @@
                 const adminLink = document.createElement('a');
                 adminLink.href = 'admin.html';
                 adminLink.textContent = 'Admin Portal';
-                adminLink.style.cssText = 'color: #3f3f46; font-weight: 700; margin-left: 2.5rem;';
+                adminLink.style.cssText = 'color: var(--text-main); font-weight: 700;';
 
                 // Το τοποθετούμε πριν από τον "Λογαριασμό μου"
                 const accountLink = navLinks.querySelector('a[href="account.html"]');

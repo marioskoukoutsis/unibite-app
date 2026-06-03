@@ -117,6 +117,16 @@ body {
     margin-bottom: 1.2rem;
 }
 
+/* Grids για λίστες καρτών (Feed, Παραγγελίες, κλπ) */
+.feed-grid,
+#my-orders-container,
+#my-listings-container,
+#requests-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem; /* Απόσταση ανάμεσα στις κάρτες */
+}
+
 /* Κουμπιά */
 .btn {
     background-color: var(--text-main); /* Μαύρο minimal κουμπί από προεπιλογή */
