@@ -1174,3 +1174,11 @@ body {
         max-width: none;
     }
 }
+
+/* Hidden view helper for robust Leaflet layout sizing */
+.hidden-view {
+    position: absolute !important;
+    left: -9999px !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}

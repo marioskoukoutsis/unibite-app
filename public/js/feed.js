@@ -138,8 +138,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const center = userLocation ? [userLocation.lat, userLocation.lon] : [40.6401, 22.9444];
         map = L.map('map').setView(center, 13);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        // Google Maps styled roadmap tiles!
+        L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            attribution: '&copy; Google Maps'
         }).addTo(map);
 
         markersGroup = L.layerGroup().addTo(map);
@@ -154,17 +155,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         markersGroup.clearLayers();
 
-        // User location marker
+        // User location marker (Google Maps style blue pin)
         if (userLocation) {
             if (userMarker) {
                 map.removeLayer(userMarker);
             }
             
+            const userIconHtml = `
+                <svg viewBox="0 0 24 24" width="32" height="32" style="display: block; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.3));">
+                    <path fill="#3b82f6" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" stroke="#ffffff" stroke-width="1.5"/>
+                </svg>
+            `;
+
             const userIcon = L.divIcon({
-                html: `<div style="background-color: #3b82f6; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);"></div>`,
+                html: userIconHtml,
                 className: 'user-location-marker',
-                iconSize: [14, 14],
-                iconAnchor: [7, 7]
+                iconSize: [32, 32],
+                iconAnchor: [16, 32],
+                popupAnchor: [0, -32]
             });
 
             userMarker = L.marker([userLocation.lat, userLocation.lon], { icon: userIcon })
@@ -184,20 +192,25 @@ document.addEventListener('DOMContentLoaded', () => {
             const coords = geocodeCache[item.pickup_location];
             if (coords) {
                 const isSoldOut = item.available_portions === 0;
-                const pinColor = isSoldOut ? '#71717a' : 'var(--primary-color, #e05d3a)';
-                const iconHtml = `
-                    <div style="background-color: ${pinColor}; width: 16px; height: 16px; border-radius: 50%; border: 2.5px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); transform: scale(${isSoldOut ? 0.9 : 1.1});"></div>
+                // Google Maps style red/terracotta pin or gray if sold out
+                const pinColor = isSoldOut ? '#9ca3af' : '#e05d3a';
+                
+                const pinIconHtml = `
+                    <svg viewBox="0 0 24 24" width="32" height="32" style="display: block; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.35));">
+                        <path fill="${pinColor}" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" stroke="#ffffff" stroke-width="1.5"/>
+                    </svg>
                 `;
                 
                 const customIcon = L.divIcon({
-                    html: iconHtml,
+                    html: pinIconHtml,
                     className: 'custom-food-marker',
-                    iconSize: [16, 16],
-                    iconAnchor: [8, 8]
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 32],
+                    popupAnchor: [0, -32]
                 });
 
                 const popupContent = `
-                    <div style="font-family: var(--font-main); min-width: 160px;">
+                    <div style="font-family: var(--font-main); min-width: 170px; padding: 2px;">
                         <h4 style="margin: 0 0 4px 0; font-weight: 700; color: var(--text-main); font-size: 0.95rem;">${escapeHTML(item.title)}</h4>
                         <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: var(--text-muted);">📍 ${escapeHTML(item.pickup_location)}</p>
                         <p style="margin: 0 0 6px 0; font-size: 0.85rem; color: var(--text-muted);">🍽️ Μερίδες: <b>${item.available_portions} / ${item.total_portions}</b></p>
@@ -425,25 +438,19 @@ document.addEventListener('DOMContentLoaded', () => {
             currentView = 'list';
             toggleListBtn.classList.add('active');
             toggleMapBtn.classList.remove('active');
-            mapViewContainer.style.display = 'none';
-            feedContainer.style.display = 'grid';
+            mapViewContainer.classList.add('hidden-view');
+            feedContainer.classList.remove('hidden-view');
         });
 
         toggleMapBtn.addEventListener('click', () => {
             currentView = 'map';
             toggleMapBtn.classList.add('active');
             toggleListBtn.classList.remove('active');
-            feedContainer.style.display = 'none';
-            mapViewContainer.style.display = 'block';
-            
-            initMap();
+            feedContainer.classList.add('hidden-view');
+            mapViewContainer.classList.remove('hidden-view');
             
             if (map) {
                 map.invalidateSize(true);
-                setTimeout(() => {
-                    map.invalidateSize(true);
-                    processAndRenderFeed();
-                }, 150);
             }
         });
     }
@@ -561,6 +568,7 @@ async function fetchMyOrders() {
 
     fetchListings();
     fetchMyOrders();
+    initMap();
 });
 
 // --- Rating Labels Configuration ---
