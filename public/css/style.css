@@ -880,16 +880,21 @@ body {
     width: 100%;
 }
 
-.address-input-wrapper .form-control {
+/* Custom isolated Address Input class */
+.address-input {
     flex: 1;
     padding: 0.75rem 1rem !important;
     background: var(--bg-color);
     border: 1px solid var(--border-color) !important;
     border-radius: 8px !important;
+    font-family: var(--font-main);
+    font-size: 1rem;
+    color: var(--text-main);
     transition: var(--transition);
 }
 
-.address-input-wrapper .form-control:focus {
+.address-input:focus {
+    outline: none;
     border-color: var(--primary-color) !important;
     box-shadow: 0 0 0 3px rgba(224, 93, 58, 0.1);
     background: white;
@@ -1065,14 +1070,42 @@ body {
     z-index: 10;
 }
 
-/* Card hover animation */
+/* Card hover & smooth animations */
 .feed-page .card {
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
+    animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .feed-page .card:hover {
     transform: translateY(-5px);
     box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.08);
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Prevent any buttons from moving (no translation/scale shifts) on hover or active/touch */
+.feed-page button:active, 
+.feed-page button:hover, 
+.feed-page .btn:active, 
+.feed-page .btn:hover,
+.feed-page .btn-submit-rating:active,
+.feed-page .btn-submit-rating:hover,
+.feed-page .btn-search:active,
+.feed-page .btn-search:hover,
+.feed-page .btn-toggle:active,
+.feed-page .btn-toggle:hover,
+.feed-page .scroll-to-top:active,
+.feed-page .scroll-to-top:hover {
+    transform: none !important;
 }
 
 /* Leaflet Map popup customization */
