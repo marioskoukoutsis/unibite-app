@@ -439,10 +439,11 @@ document.addEventListener('DOMContentLoaded', () => {
             initMap();
             
             if (map) {
+                map.invalidateSize(true);
                 setTimeout(() => {
-                    map.invalidateSize();
+                    map.invalidateSize(true);
                     processAndRenderFeed();
-                }, 100);
+                }, 150);
             }
         });
     }
