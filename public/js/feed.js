@@ -410,6 +410,8 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 distanceValueSpan.textContent = `${val} χλμ`;
             }
+        });
+        sliderDistance.addEventListener('change', () => {
             processAndRenderFeed();
         });
     }

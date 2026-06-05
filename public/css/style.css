@@ -872,31 +872,33 @@ body {
     box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04);
 }
 
-/* Address search layout */
+/* Address search layout (Vertical Stack) */
 .address-input-wrapper {
     display: flex;
-    gap: 10px;
+    flex-direction: column;
+    gap: 12px;
     margin-top: 5px;
     width: 100%;
 }
 
 /* Custom isolated Address Input class */
 .address-input {
-    flex: 1;
-    padding: 0.75rem 1rem !important;
+    width: 100%;
+    padding: 0.85rem 1.2rem !important;
     background: var(--bg-color);
     border: 1px solid var(--border-color) !important;
     border-radius: 8px !important;
     font-family: var(--font-main);
-    font-size: 1rem;
+    font-size: 0.95rem;
     color: var(--text-main);
     transition: var(--transition);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 .address-input:focus {
     outline: none;
     border-color: var(--primary-color) !important;
-    box-shadow: 0 0 0 3px rgba(224, 93, 58, 0.1);
+    box-shadow: 0 0 0 3px rgba(224, 93, 58, 0.1), inset 0 2px 4px rgba(0, 0, 0, 0.02) !important;
     background: white;
 }
 
@@ -904,16 +906,23 @@ body {
     background-color: var(--text-main);
     color: white;
     border: none;
-    padding: 0.75rem 1.5rem;
+    padding: 0.85rem 1.5rem;
     border-radius: 8px;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     transition: var(--transition);
     white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    letter-spacing: 0.2px;
+    box-shadow: 0 4px 12px rgba(24, 24, 27, 0.08);
 }
 
 .btn-search:hover {
     background-color: var(--primary-color);
+    box-shadow: 0 4px 16px rgba(224, 93, 58, 0.2);
 }
 
 /* Second filter row (Distance & View toggle) */
