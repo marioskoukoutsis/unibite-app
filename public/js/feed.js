@@ -40,12 +40,239 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fetchAndDisplayCredits();
 
+    // --- Global State for Map and Filtering ---
+    let allListings = [];
+    let userLocation = null;
+    let geocodeCache = JSON.parse(localStorage.getItem('unibite_geocode_cache') || '{}');
+    let map = null;
+    let markersGroup = null;
+    let userMarker = null;
+    let currentView = 'list';
+
+    // Helper to escape HTML and prevent injection
+    function escapeHTML(str) {
+        if (!str) return '';
+        return str.replace(/[&<>'"]/g, 
+            tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag] || tag)
+        );
+    }
+
+    // Haversine formula to calculate distance in km
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371; // Earth's radius in km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = 
+            Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+
+    // Geocode an address string via free Nominatim API with cache
+    async function geocodeAddress(address) {
+        if (!address) return null;
+        const cleanAddress = address.trim();
+        if (geocodeCache[cleanAddress]) {
+            return geocodeCache[cleanAddress];
+        }
+        try {
+            const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(cleanAddress)}`;
+            const response = await fetch(url, {
+                headers: {
+                    'Accept-Language': 'el,en',
+                    'User-Agent': 'UniBiteApp/1.0'
+                }
+            });
+            if (!response.ok) return null;
+            const data = await response.json();
+            if (data && data.length > 0) {
+                const coords = {
+                    lat: parseFloat(data[0].lat),
+                    lon: parseFloat(data[0].lon)
+                };
+                geocodeCache[cleanAddress] = coords;
+                localStorage.setItem('unibite_geocode_cache', JSON.stringify(geocodeCache));
+                return coords;
+            }
+        } catch (e) {
+            console.error('OSM Geocoding failed for:', address, e);
+        }
+        return null;
+    }
+
+    // Geocode all listing locations sequentially with a rate limit delay
+    async function geocodeAllListingsAndRefresh(listings) {
+        const locations = [...new Set(listings.map(l => l.pickup_location))];
+        let hasNewGeocodes = false;
+        
+        for (const loc of locations) {
+            if (!geocodeCache[loc]) {
+                const coords = await geocodeAddress(loc);
+                if (coords) {
+                    hasNewGeocodes = true;
+                }
+                // Pause for 1 second to respect OSM Nominatim rate limits (max 1 req/sec)
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+        
+        if (hasNewGeocodes) {
+            await processAndRenderFeed();
+        }
+    }
+
+    // Initialize Leaflet Map
+    function initMap() {
+        const mapContainer = document.getElementById('map');
+        if (!mapContainer || map) return;
+
+        // Default center on Thessaloniki: 40.6401, 22.9444
+        const center = userLocation ? [userLocation.lat, userLocation.lon] : [40.6401, 22.9444];
+        map = L.map('map').setView(center, 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        markersGroup = L.layerGroup().addTo(map);
+    }
+
+    // Update markers on Leaflet map
+    function updateMapMarkers(listings) {
+        if (!map) return;
+        if (!markersGroup) {
+            markersGroup = L.layerGroup().addTo(map);
+        }
+
+        markersGroup.clearLayers();
+
+        // User location marker
+        if (userLocation) {
+            if (userMarker) {
+                map.removeLayer(userMarker);
+            }
+            
+            const userIcon = L.divIcon({
+                html: `<div style="background-color: #3b82f6; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);"></div>`,
+                className: 'user-location-marker',
+                iconSize: [14, 14],
+                iconAnchor: [7, 7]
+            });
+
+            userMarker = L.marker([userLocation.lat, userLocation.lon], { icon: userIcon })
+                .bindPopup('<b>📍 Η Τοποθεσία σου</b>')
+                .addTo(map);
+        } else if (userMarker) {
+            map.removeLayer(userMarker);
+            userMarker = null;
+        }
+
+        let bounds = [];
+        if (userLocation) {
+            bounds.push([userLocation.lat, userLocation.lon]);
+        }
+
+        listings.forEach(item => {
+            const coords = geocodeCache[item.pickup_location];
+            if (coords) {
+                const isSoldOut = item.available_portions === 0;
+                const pinColor = isSoldOut ? '#71717a' : 'var(--primary-color, #e05d3a)';
+                const iconHtml = `
+                    <div style="background-color: ${pinColor}; width: 16px; height: 16px; border-radius: 50%; border: 2.5px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); transform: scale(${isSoldOut ? 0.9 : 1.1});"></div>
+                `;
+                
+                const customIcon = L.divIcon({
+                    html: iconHtml,
+                    className: 'custom-food-marker',
+                    iconSize: [16, 16],
+                    iconAnchor: [8, 8]
+                });
+
+                const popupContent = `
+                    <div style="font-family: var(--font-main); min-width: 160px;">
+                        <h4 style="margin: 0 0 4px 0; font-weight: 700; color: var(--text-main); font-size: 0.95rem;">${escapeHTML(item.title)}</h4>
+                        <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: var(--text-muted);">📍 ${escapeHTML(item.pickup_location)}</p>
+                        <p style="margin: 0 0 6px 0; font-size: 0.85rem; color: var(--text-muted);">🍽️ Μερίδες: <b>${item.available_portions} / ${item.total_portions}</b></p>
+                        <button class="btn btn-order" 
+                            onclick="requestPortion(${item.id})" 
+                            style="width: 100%; padding: 6px 10px; font-size: 0.8rem; height: auto;"
+                            ${isSoldOut ? 'disabled' : ''}>
+                            ${isSoldOut ? 'Εξαντλήθηκε' : 'Θέλω Μερίδα!'}
+                        </button>
+                    </div>
+                `;
+
+                const marker = L.marker([coords.lat, coords.lon], { icon: customIcon })
+                    .bindPopup(popupContent);
+                
+                markersGroup.addLayer(marker);
+                bounds.push([coords.lat, coords.lon]);
+            }
+        });
+
+        // Fit map bounds to show all markers nicely
+        if (bounds.length > 0 && map) {
+            map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+        }
+    }
+
+    // Process Listings, calculate distances, apply sorting & distance filter
+    async function processAndRenderFeed() {
+        const listingsWithDistance = allListings.map(item => {
+            let distance = null;
+            const coords = geocodeCache[item.pickup_location];
+            if (userLocation && coords) {
+                distance = calculateDistance(userLocation.lat, userLocation.lon, coords.lat, coords.lon);
+            }
+            return { ...item, distance };
+        });
+
+        // Filter out own user listings
+        let filteredListings = listingsWithDistance.filter(item => item.cook_id !== user.id);
+
+        // Filter by max distance slider
+        const maxDistance = parseFloat(document.getElementById('distance-range')?.value || 25);
+        if (userLocation && maxDistance < 25) {
+            filteredListings = filteredListings.filter(item => {
+                return item.distance !== null && item.distance <= maxDistance;
+            });
+        }
+
+        // Sort by distance if userLocation exists
+        if (userLocation) {
+            filteredListings.sort((a, b) => {
+                if (a.distance === null) return 1;
+                if (b.distance === null) return -1;
+                return a.distance - b.distance;
+            });
+        }
+
+        // Render listings cards
+        renderFeed(filteredListings);
+
+        // Update Leaflet pins
+        updateMapMarkers(filteredListings);
+    }
+
     // 1. Λήψη των αγγελιών από το Backend
     async function fetchListings() {
         try {
             const response = await fetch('/api/listings');
-            const listings = await response.json();
-            renderFeed(listings);
+            allListings = await response.json();
+            
+            // Background geocode
+            geocodeAllListingsAndRefresh(allListings);
+            
+            // Initial render
+            await processAndRenderFeed();
         } catch (error) {
             console.error('Σφάλμα fetch:', error);
             feedContainer.innerHTML = '<p>Πρόβλημα στη φόρτωση του feed.</p>';
@@ -54,44 +281,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. Εμφάνιση των αγγελιών στην HTML
     function renderFeed(listings) {
-        feedContainer.innerHTML = ''; // Καθαρισμός του "loading"
+        feedContainer.innerHTML = ''; 
 
-        // Φιλτράρουμε τις αγγελίες ώστε να ΜΗΝ δείχνει τις δικές μας!
-        const feedListings = listings.filter(item => item.cook_id !== user.id);
-
-        if (feedListings.length === 0) {
-            feedContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Δεν υπάρχουν διαθέσιμες μερίδες από άλλους φοιτητές αυτή τη στιγμή. 😢</p>';
+        if (listings.length === 0) {
+            feedContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 2rem;">Δεν υπάρχουν διαθέσιμα γεύματα που να ταιριάζουν στα κριτήρια. 😢</p>';
             return;
         }
 
-        feedListings.forEach(item => {
+        listings.forEach(item => {
             const isSoldOut = item.available_portions === 0;
             
             const card = document.createElement('div');
             card.className = `card ${isSoldOut ? 'sold-out' : ''}`;
             
-            // HTML για την κάθε κάρτα φαγητού
+            // Allergens HTML
+            let allergensHTML = '';
+            if (item.allergens) {
+                let parsed = item.allergens;
+                if (typeof parsed === 'string') { 
+                    try { parsed = JSON.parse(parsed); } catch(e) {} 
+                }
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    allergensHTML = `<div class="allergen-pills-container">`;
+                    parsed.forEach(allergen => {
+                        allergensHTML += `<span class="allergen-pill">${escapeHTML(allergen)}</span>`;
+                    });
+                    allergensHTML += `</div>`;
+                } else if (typeof parsed === 'string' && parsed.trim() !== '' && parsed !== '[]') {
+                    allergensHTML = `<div class="allergen-pills-container"><span class="allergen-pill">${escapeHTML(parsed)}</span></div>`;
+                }
+            }
+
+            // Distance badge HTML
+            let distanceBadgeHTML = '';
+            if (item.distance !== null) {
+                distanceBadgeHTML = `
+                    <div class="distance-badge-pill">
+                        📍 ${item.distance.toFixed(1)} χλμ
+                    </div>
+                `;
+            }
+            
             card.innerHTML = `
-                ${item.photo_url ? `<img src="${item.photo_url}" alt="${item.title}" class="food-img">` : ''}
+                ${item.photo_url ? `<img src="${item.photo_url}" alt="${escapeHTML(item.title)}" class="food-img">` : ''}
                 <div class="card-content">
-                    <h3>${item.title}</h3>
-                    <p><strong>📍 Τοποθεσία:</strong> ${item.pickup_location}</p>
-                    <p><strong>⏰ Ώρα:</strong> ${new Date(item.pickup_time).toLocaleString('el-GR')}</p>
-                    <p><strong>🍽️ Μερίδες:</strong> ${item.available_portions} / ${item.total_portions}</p>
-                    ${item.notes ? `<p class="notes"><em>"${item.notes}"</em></p>` : ''}
-                    ${(() => {
-                        let allergensDisplay = '';
-                        if (item.allergens) {
-                            let parsed = item.allergens;
-                            if (typeof parsed === 'string') { try { parsed = JSON.parse(parsed); } catch(e) {} }
-                            if (Array.isArray(parsed) && parsed.length > 0) allergensDisplay = parsed.join(', ');
-                            else if (typeof parsed === 'string' && parsed.trim() !== '' && parsed !== '[]') allergensDisplay = parsed;
-                        }
-                        return allergensDisplay ? `<p style="margin-top: 0.5rem; color: #ef4444; font-size: 0.88rem; font-weight: 500;"><strong>⚠️ Αλλεργιογόνα:</strong> ${allergensDisplay}</p>` : '';
-                    })()}
+                    ${distanceBadgeHTML}
+                    <h3 style="font-weight: 700; margin-bottom: 0.5rem; font-size: 1.15rem;">${escapeHTML(item.title)}</h3>
+                    <p style="font-size: 0.9rem; margin-bottom: 0.3rem;"><strong>📍 Τοποθεσία:</strong> ${escapeHTML(item.pickup_location)}</p>
+                    <p style="font-size: 0.9rem; margin-bottom: 0.3rem;"><strong>⏰ Ώρα:</strong> ${new Date(item.pickup_time).toLocaleString('el-GR')}</p>
+                    <p style="font-size: 0.9rem; margin-bottom: 0.4rem;"><strong>🍽️ Μερίδες:</strong> ${item.available_portions} / ${item.total_portions}</p>
+                    ${item.notes ? `<p class="notes" style="font-style: italic; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.6rem;">"${escapeHTML(item.notes)}"</p>` : ''}
+                    ${allergensHTML}
                     
-                    <button class="btn-order" 
+                    <button class="btn btn-order" 
                         onclick="requestPortion(${item.id})" 
+                        style="width: 100%; margin-top: 0.5rem;"
                         ${isSoldOut ? 'disabled' : ''}>
                         ${isSoldOut ? 'Εξαντλήθηκε' : 'Θέλω Μερίδα!'}
                     </button>
@@ -99,6 +343,123 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             feedContainer.appendChild(card);
         });
+    }
+
+    // Geocoding user address input handler
+    async function handleGeocodeUserAddress() {
+        const addressInput = document.getElementById('user-address');
+        if (!addressInput) return;
+        const addressValue = addressInput.value.trim();
+        if (!addressValue) {
+            alert('Παρακαλώ εισάγετε μια διεύθυνση.');
+            return;
+        }
+
+        const btnGeocode = document.getElementById('btn-geocode');
+        const originalText = btnGeocode.textContent;
+        btnGeocode.disabled = true;
+        btnGeocode.textContent = 'Αναζήτηση...';
+
+        try {
+            const coords = await geocodeAddress(addressValue);
+            if (coords) {
+                userLocation = coords;
+                localStorage.setItem('unibite_user_address', addressValue);
+                localStorage.setItem('unibite_user_coords', JSON.stringify(coords));
+                
+                if (!map) {
+                    initMap();
+                } else {
+                    map.setView([userLocation.lat, userLocation.lon], 13);
+                }
+
+                await processAndRenderFeed();
+            } else {
+                alert('Δεν μπορέσαμε να εντοπίσουμε αυτή τη διεύθυνση. Δοκιμάστε ξανά με πιο απλούς όρους (π.χ. Θεσσαλονίκη).');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Σφάλμα κατά την αναζήτηση διεύθυνσης.');
+        } finally {
+            btnGeocode.disabled = false;
+            btnGeocode.textContent = originalText;
+        }
+    }
+
+    // DOM wire up
+    const btnGeocode = document.getElementById('btn-geocode');
+    const inputAddress = document.getElementById('user-address');
+    const sliderDistance = document.getElementById('distance-range');
+    const distanceValueSpan = document.getElementById('distance-value');
+
+    if (btnGeocode) {
+        btnGeocode.addEventListener('click', handleGeocodeUserAddress);
+    }
+    if (inputAddress) {
+        inputAddress.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleGeocodeUserAddress();
+            }
+        });
+    }
+    if (sliderDistance) {
+        sliderDistance.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            if (val >= 25) {
+                distanceValueSpan.textContent = 'Όλα';
+            } else {
+                distanceValueSpan.textContent = `${val} χλμ`;
+            }
+            processAndRenderFeed();
+        });
+    }
+
+    const toggleListBtn = document.getElementById('toggle-list');
+    const toggleMapBtn = document.getElementById('toggle-map');
+    const mapViewContainer = document.getElementById('map-view-container');
+
+    if (toggleListBtn && toggleMapBtn) {
+        toggleListBtn.addEventListener('click', () => {
+            currentView = 'list';
+            toggleListBtn.classList.add('active');
+            toggleMapBtn.classList.remove('active');
+            mapViewContainer.style.display = 'none';
+            feedContainer.style.display = 'grid';
+        });
+
+        toggleMapBtn.addEventListener('click', () => {
+            currentView = 'map';
+            toggleMapBtn.classList.add('active');
+            toggleListBtn.classList.remove('active');
+            feedContainer.style.display = 'none';
+            mapViewContainer.style.display = 'block';
+            
+            initMap();
+            
+            if (map) {
+                setTimeout(() => {
+                    map.invalidateSize();
+                    processAndRenderFeed();
+                }, 100);
+            }
+        });
+    }
+
+    // Load stored values
+    const storedAddress = localStorage.getItem('unibite_user_address');
+    const storedCoords = localStorage.getItem('unibite_user_coords');
+
+    if (storedAddress && storedCoords) {
+        if (inputAddress) inputAddress.value = storedAddress;
+        try {
+            userLocation = JSON.parse(storedCoords);
+            const val = sliderDistance ? parseFloat(sliderDistance.value) : 25;
+            if (distanceValueSpan) {
+                distanceValueSpan.textContent = val >= 25 ? 'Όλα' : `${val} χλμ`;
+            }
+        } catch (e) {
+            console.error('Failed to parse stored coordinates:', e);
+        }
     }
 
     const ordersContainer = document.getElementById('my-orders-container');
