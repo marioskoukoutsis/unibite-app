@@ -9,8 +9,8 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 
 // --- 1. Μεγαλώνουμε το όριο για τις φωτογραφίες ---
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // --- 2. ΕΠΙΤΡΕΠΟΥΜΕ ΣΤΟΝ BROWSER ΝΑ ΒΛΕΠΕΙ ΤΟΝ ΦΑΚΕΛΟ PUBLIC ---
 // Χρησιμοποιούμε το path.join για να είμαστε σίγουροι ότι βρίσκει τον φάκελο ανεξάρτητα από πού τρέχεις το terminal

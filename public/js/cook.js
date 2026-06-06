@@ -44,11 +44,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fetchMyListings();
 
+    // Συμπίεση & Resize φωτογραφίας πριν την αποστολή
+    // Οι φωτογραφίες κινητού είναι συχνά 5-15MB+ και σπάνε το όριο του server.
+    // Μειώνουμε σε max 1200px και JPEG quality 0.7 (~100-300KB τελικό μέγεθος).
     const getBase64 = (file) => new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
         reader.onerror = error => reject(error);
+        reader.onload = () => {
+            const img = new Image();
+            img.onload = () => {
+                const MAX_DIM = 1200;
+                let width = img.width;
+                let height = img.height;
+
+                // Αν η εικόνα είναι μεγαλύτερη από 1200px, τη μικραίνουμε αναλογικά
+                if (width > MAX_DIM || height > MAX_DIM) {
+                    if (width > height) {
+                        height = Math.round(height * MAX_DIM / width);
+                        width = MAX_DIM;
+                    } else {
+                        width = Math.round(width * MAX_DIM / height);
+                        height = MAX_DIM;
+                    }
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Εξαγωγή ως JPEG με quality 0.7 — δραματική μείωση μεγέθους
+                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                resolve(compressedBase64);
+            };
+            img.onerror = () => reject(new Error('Αποτυχία φόρτωσης εικόνας'));
+            img.src = reader.result;
+        };
     });
 
     // --- ΥΠΟΒΟΛΗ ΦΟΡΜΑΣ (POST για Νέα, PUT για Επεξεργασία) ---
