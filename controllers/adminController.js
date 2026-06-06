@@ -42,65 +42,7 @@ exports.getStats = async (req, res) => {
     }
 };
 
-// =============================================
-//  ΝΕΑ: Interactive Admin Endpoints
-// =============================================
 
-// --- Λίστα Χρηστών ---
-exports.getUsers = async (req, res) => {
-    try {
-        const [users] = await pool.query(`
-            SELECT id, name, email, role, credits, created_at 
-            FROM users 
-            ORDER BY created_at DESC
-        `);
-        res.json(users);
-    } catch (error) {
-        console.error('Σφάλμα getUsers:', error);
-        res.status(500).json({ error: 'Πρόβλημα στη λήψη χρηστών.' });
-    }
-};
-
-// --- Αλλαγή Role Χρήστη ---
-exports.updateUserRole = async (req, res) => {
-    try {
-        const userId = req.params.id;
-        const { role } = req.body;
-
-        if (!['student', 'admin'].includes(role)) {
-            return res.status(400).json({ error: 'Μη έγκυρος ρόλος. Επιτρέπονται: student, admin.' });
-        }
-
-        const [result] = await pool.query('UPDATE users SET role = ? WHERE id = ?', [role, userId]);
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Ο χρήστης δεν βρέθηκε.' });
-        }
-
-        res.json({ message: `Ο ρόλος ενημερώθηκε σε: ${role}` });
-    } catch (error) {
-        console.error('Σφάλμα updateUserRole:', error);
-        res.status(500).json({ error: 'Πρόβλημα κατά την ενημέρωση ρόλου.' });
-    }
-};
-
-// --- Διαγραφή Χρήστη ---
-exports.deleteUser = async (req, res) => {
-    try {
-        const userId = req.params.id;
-
-        const [result] = await pool.query('DELETE FROM users WHERE id = ?', [userId]);
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Ο χρήστης δεν βρέθηκε.' });
-        }
-
-        res.json({ message: 'Ο χρήστης διαγράφηκε επιτυχώς.' });
-    } catch (error) {
-        console.error('Σφάλμα deleteUser:', error);
-        res.status(500).json({ error: 'Πρόβλημα κατά τη διαγραφή χρήστη.' });
-    }
-};
 
 // --- Λίστα Όλων των Αγγελιών (ενεργές + ανενεργές + διαγραμμένες) ---
 exports.getAllListings = async (req, res) => {

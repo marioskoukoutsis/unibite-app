@@ -35,11 +35,15 @@ exports.createListing = async (req, res) => {
         if (photo_base64) {
             // Το Base64 String έχει αυτή τη μορφή: "data:image/png;base64,iVBORw0KGgo..."
             // Χωρίζουμε την επικεφαλίδα από τα πραγματικά δεδομένα
-            const matches = photo_base64.match(/^data:image\/([a-zA-Z+]+);base64,(.+)$/);
+            // ΣΗΜΑΝΤΙΚΟ: Χρησιμοποιούμε [\s\S]+ αντί για .+ γιατί μεγάλα base64 strings
+            // μπορεί να περιέχουν newlines, και το .+ δεν τα πιάνει!
+            const matches = photo_base64.match(/^data:image\/([\w+.-]+);base64,([\s\S]+)$/);
 
             if (matches && matches.length === 3) {
-                const extension = matches[1]; // π.χ. png, jpeg
-                const imageData = matches[2]; // Τα πραγματικά δεδομένα
+                let extension = matches[1]; // π.χ. png, jpeg, webp, heic
+                // Κανονικοποίηση: αν είναι heic/heif, αποθηκεύουμε ως jpeg (ο browser τα μετατρέπει)
+                if (extension === 'heic' || extension === 'heif') extension = 'jpeg';
+                const imageData = matches[2].replace(/\s/g, ''); // Αφαιρούμε τυχόν whitespace/newlines
 
                 // Μετατροπή του κειμένου ξανά σε αρχείο
                 const buffer = Buffer.from(imageData, 'base64');
@@ -101,17 +105,15 @@ exports.updateListing = async (req, res) => {
 
         // --- ΝΕΟ: ΕΠΕΞΕΡΓΑΣΙΑ ΝΕΑΣ ΦΩΤΟΓΡΑΦΙΑΣ (Αν ανέβασε) ---
         if (photo_base64) {
-            const matches = photo_base64.match(/^data:image\/([a-zA-Z+]+);base64,(.+)$/);
+            // Ίδιο regex fix: [\w+.-] για MIME types και [\s\S]+ για μεγάλα base64 strings
+            const matches = photo_base64.match(/^data:image\/([\w+.-]+);base64,([\s\S]+)$/);
             if (matches && matches.length === 3) {
-                const extension = matches[1];
-                const imageData = matches[2];
+                let extension = matches[1];
+                if (extension === 'heic' || extension === 'heif') extension = 'jpeg';
+                const imageData = matches[2].replace(/\s/g, ''); // Αφαιρούμε whitespace
                 const buffer = Buffer.from(imageData, 'base64');
                 const fileName = Date.now() + '.' + extension;
 
-                // Πρέπει να έχουμε κάνει require('fs') και require('path') πάνω-πάνω στο αρχείο (το έχουμε ήδη)
-                const fs = require('fs');
-                const path = require('path');
-                
                 const uploadDir = path.join(__dirname, '../public/uploads');
                 if (!fs.existsSync(uploadDir)) {
                     fs.mkdirSync(uploadDir, { recursive: true });

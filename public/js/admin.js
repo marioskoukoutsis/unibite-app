@@ -32,7 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Lazy load data on first tab visit
             if (!loaded[target]) {
                 loaded[target] = true;
-                if (target === 'tab-users') loadUsers();
                 if (target === 'tab-listings') loadListings();
                 if (target === 'tab-requests') loadRequests();
             }
@@ -45,9 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
     //  SEARCH HANDLERS
     // =============================================
-    document.getElementById('search-users').addEventListener('input', (e) => {
-        filterRows('admin-users-container', e.target.value);
-    });
     document.getElementById('search-listings').addEventListener('input', (e) => {
         filterRows('admin-listings-container', e.target.value);
     });
@@ -155,112 +151,7 @@ function renderTopMealsStats(meals) {
     });
 }
 
-// =============================================
-//  TAB 2: ΧΡΗΣΤΕΣ
-// =============================================
-async function loadUsers() {
-    const container = document.getElementById('admin-users-container');
-    try {
-        const response = await fetch('/api/admin/users');
-        const users = await response.json();
-        container.innerHTML = '';
 
-        if (users.length === 0) {
-            container.innerHTML = '<p style="color: var(--text-muted); text-align: center;">Δεν βρέθηκαν χρήστες.</p>';
-            return;
-        }
-
-        users.forEach((u, index) => {
-            const row = document.createElement('div');
-            row.className = 'admin-row';
-            row.setAttribute('data-user-id', u.id);
-
-            const roleColor = u.role === 'admin' ? '#e05d3a' : '#71717a';
-            const roleBadge = u.role === 'admin' ? '🛡️ Admin' : '🎓 Student';
-            const dateStr = new Date(u.created_at).toLocaleDateString('el-GR');
-
-            row.innerHTML = `
-                <div class="admin-row-info">
-                    <div class="admin-row-main">
-                        <span class="admin-row-name">${u.name}</span>
-                        <span class="admin-row-badge" style="color: ${roleColor};">${roleBadge}</span>
-                    </div>
-                    <div class="admin-row-meta">
-                        <span>📧 ${u.email}</span>
-                        <span>💰 ${u.credits} credits</span>
-                        <span>📅 ${dateStr}</span>
-                    </div>
-                </div>
-                <div class="admin-row-actions">
-                    <button class="admin-btn admin-btn-role" onclick="toggleUserRole(${u.id}, '${u.role}')" title="Αλλαγή ρόλου">
-                        ${u.role === 'admin' ? '⬇️ Student' : '⬆️ Admin'}
-                    </button>
-                    <button class="admin-btn admin-btn-delete" onclick="deleteUser(${u.id}, '${u.name}')" title="Διαγραφή χρήστη">
-                        🗑️
-                    </button>
-                </div>
-            `;
-            animateEntrance(row, index);
-            container.appendChild(row);
-        });
-    } catch (error) {
-        console.error('Σφάλμα φόρτωσης χρηστών:', error);
-        container.innerHTML = '<p style="color: #ef4444; text-align: center;">Πρόβλημα στη φόρτωση χρηστών.</p>';
-    }
-}
-
-window.toggleUserRole = async function(userId, currentRole) {
-    const newRole = currentRole === 'admin' ? 'student' : 'admin';
-    const confirmed = confirm(`Θέλεις σίγουρα να αλλάξεις τον ρόλο σε "${newRole}";`);
-    if (!confirmed) return;
-
-    try {
-        const response = await fetch(`/api/admin/users/${userId}/role`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ role: newRole })
-        });
-        const result = await response.json();
-        if (response.ok) {
-            // DOM update χωρίς reload
-            const row = document.querySelector(`[data-user-id="${userId}"]`);
-            if (row) {
-                const roleColor = newRole === 'admin' ? '#e05d3a' : '#71717a';
-                const roleBadge = newRole === 'admin' ? '🛡️ Admin' : '🎓 Student';
-                row.querySelector('.admin-row-badge').style.color = roleColor;
-                row.querySelector('.admin-row-badge').textContent = roleBadge;
-                const roleBtn = row.querySelector('.admin-btn-role');
-                roleBtn.textContent = newRole === 'admin' ? '⬇️ Student' : '⬆️ Admin';
-                roleBtn.setAttribute('onclick', `toggleUserRole(${userId}, '${newRole}')`);
-                // Flash animation
-                row.style.transition = 'background 0.3s ease';
-                row.style.background = 'rgba(224, 93, 58, 0.08)';
-                setTimeout(() => { row.style.background = ''; }, 600);
-            }
-        } else {
-            alert(result.error || 'Σφάλμα κατά την αλλαγή ρόλου.');
-        }
-    } catch (error) {
-        alert('Πρόβλημα σύνδεσης με τον server.');
-    }
-};
-
-window.deleteUser = async function(userId, userName) {
-    const confirmed = confirm(`⚠️ Είσαι σίγουρος ότι θέλεις να διαγράψεις τον χρήστη "${userName}";\n\nΑυτή η ενέργεια είναι μη αναστρέψιμη!`);
-    if (!confirmed) return;
-
-    try {
-        const response = await fetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
-        const result = await response.json();
-        if (response.ok) {
-            removeRowAnimated(`[data-user-id="${userId}"]`);
-        } else {
-            alert(result.error || 'Σφάλμα κατά τη διαγραφή.');
-        }
-    } catch (error) {
-        alert('Πρόβλημα σύνδεσης με τον server.');
-    }
-};
 
 // =============================================
 //  TAB 3: ΑΓΓΕΛΙΕΣ
@@ -443,20 +334,4 @@ function animateEntrance(el, index) {
         el.style.opacity = '1';
         el.style.transform = 'translateY(0)';
     }, index * 60);
-}
-
-// Fade-out + collapse αφαίρεση γραμμής
-function removeRowAnimated(selector) {
-    const row = document.querySelector(selector);
-    if (!row) return;
-    row.style.transition = 'opacity 0.3s ease, transform 0.3s ease, max-height 0.3s ease, margin 0.3s ease, padding 0.3s ease';
-    row.style.opacity = '0';
-    row.style.transform = 'translateX(20px)';
-    row.style.overflow = 'hidden';
-    setTimeout(() => {
-        row.style.maxHeight = '0';
-        row.style.margin = '0';
-        row.style.padding = '0';
-        setTimeout(() => row.remove(), 300);
-    }, 300);
 }
