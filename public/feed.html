@@ -5,8 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UniBite - Feed Φαγητού</title>
     <link rel="stylesheet" href="css/style.css">
+    <!-- Leaflet.js CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <!-- Leaflet.js JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 </head>
-<body>
+<body class="feed-page">
 
     <nav class="navbar">
         <a href="index.html" class="navbar-brand">
@@ -31,6 +35,37 @@
             <div id="user-credits-display" class="credits-badge" style="margin-top: 1rem;">
                 <span id="credits-count">0</span> credits
             </div>
+        </div>
+
+        <!-- Φίλτρα & Αναζήτηση -->
+        <div class="feed-filters-card card" style="margin-bottom: 2rem;">
+            <div class="filter-row">
+                <div class="form-group filter-address" style="margin-bottom: 1rem; width: 100%;">
+                    <label for="user-address" style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.6rem;">📍 Η Τοποθεσία σου (για υπολογισμό απόστασης)</label>
+                    <div class="address-input-wrapper">
+                        <input type="text" id="user-address" class="address-input" placeholder="π.χ. Αριστοτέλους, Θεσσαλονίκη ή Πανεπιστήμιο...">
+                        <button type="button" id="btn-geocode" class="btn btn-search">🔍 Αναζήτηση Τοποθεσίας</button>
+                    </div>
+                </div>
+            </div>
+            <div class="filter-row second-row">
+                <div class="filter-distance">
+                    <label for="distance-range" style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.6rem;">🚗 Μέγιστη Απόσταση: <span id="distance-value">Όλα</span></label>
+                    <input type="range" id="distance-range" min="1" max="25" value="25" class="slider">
+                </div>
+                <div class="filter-toggle">
+                    <label style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.6rem;">👁️ Προβολή</label>
+                    <div class="toggle-group">
+                        <button type="button" id="toggle-list" class="btn-toggle active">📋 Λίστα</button>
+                        <button type="button" id="toggle-map" class="btn-toggle">🗺️ Χάρτης</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map View Container -->
+        <div id="map-view-container" class="card hidden-view" style="padding: 1rem; margin-bottom: 1.5rem; border-radius: var(--radius); overflow: hidden;">
+            <div id="map" style="height: 450px; border-radius: calc(var(--radius) - 4px); z-index: 1;"></div>
         </div>
 
         <div id="feed-container" class="feed-grid">

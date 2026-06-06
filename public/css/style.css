@@ -844,3 +844,348 @@ body {
         font-size: 1.1rem;
     }
 }
+
+/* =========================================
+   10. FEED PAGE - MAP, FILTERS, & POLISH
+   ========================================= */
+
+/* Make the feed page container wider on desktop */
+.feed-page .container {
+    max-width: 1100px;
+}
+
+/* Adjust feed grid to show multi-column on desktop */
+.feed-page .feed-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Glassmorphism/premium style for filters card */
+.feed-filters-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(228, 228, 231, 0.8);
+    padding: 1.8rem;
+    border-radius: var(--radius);
+    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Address search layout (Vertical Stack) */
+.address-input-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 5px;
+    width: 100%;
+}
+
+/* Custom isolated Address Input class */
+.address-input {
+    width: 100%;
+    padding: 0.85rem 1.2rem !important;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color) !important;
+    border-radius: 8px !important;
+    font-family: var(--font-main);
+    font-size: 0.95rem;
+    color: var(--text-main);
+    transition: var(--transition);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.address-input:focus {
+    outline: none;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 3px rgba(224, 93, 58, 0.1), inset 0 2px 4px rgba(0, 0, 0, 0.02) !important;
+    background: white;
+}
+
+.btn-search {
+    background-color: var(--text-main);
+    color: white;
+    border: none;
+    padding: 0.85rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    letter-spacing: 0.2px;
+    box-shadow: 0 4px 12px rgba(24, 24, 27, 0.08);
+}
+
+.btn-search:hover {
+    background-color: var(--primary-color);
+    box-shadow: 0 4px 16px rgba(224, 93, 58, 0.2);
+}
+
+/* Second filter row (Distance & View toggle) */
+.feed-filters-card .second-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    margin-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 1.2rem;
+}
+
+.filter-distance {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 350px;
+}
+
+/* Premium slider styling */
+.slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: #e4e4e7;
+    outline: none;
+    transition: background 0.15s ease-in-out;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+    transition: transform 0.1s ease;
+    box-shadow: 0 2px 6px rgba(224, 93, 58, 0.3);
+}
+
+.slider::-webkit-slider-thumb:hover {
+    transform: scale(1.25);
+}
+
+.slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+    border: none;
+    transition: transform 0.1s ease;
+    box-shadow: 0 2px 6px rgba(224, 93, 58, 0.3);
+}
+
+.slider::-moz-range-thumb:hover {
+    transform: scale(1.25);
+}
+
+.filter-toggle {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* Segmented Control / View Toggle styling */
+.toggle-group {
+    display: inline-flex;
+    background: var(--bg-color);
+    padding: 4px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.btn-toggle {
+    background: transparent;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-family: var(--font-main);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-toggle:hover {
+    color: var(--text-main);
+}
+
+.btn-toggle.active {
+    background: var(--text-main);
+    color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Distance pill badge on cards */
+.distance-badge-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(224, 93, 58, 0.08);
+    color: var(--primary-color);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: 0.6rem;
+    width: fit-content;
+}
+
+/* Allergen Pills styling */
+.allergen-pills-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 0.6rem;
+    margin-bottom: 0.8rem;
+}
+
+.allergen-pill {
+    background: #fef2f2;
+    color: #ef4444;
+    border: 1px solid #fee2e2;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Sold-out style overlay */
+.card.sold-out {
+    opacity: 0.65;
+    position: relative;
+}
+
+.card.sold-out::after {
+    content: 'ΕΞΑΝΤΛΗΘΗΚΕ';
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: rgba(239, 68, 68, 0.9);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    z-index: 10;
+}
+
+/* Card hover & smooth animations */
+.feed-page .card {
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
+    animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+#map-view-container {
+    animation: none !important; /* Prevents Leaflet container size mismatch during page animation */
+}
+
+.feed-page .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.08);
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Prevent any buttons from moving (no translation/scale shifts) on hover or active/touch */
+.feed-page button:active, 
+.feed-page button:hover, 
+.feed-page .btn:active, 
+.feed-page .btn:hover,
+.feed-page .btn-submit-rating:active,
+.feed-page .btn-submit-rating:hover,
+.feed-page .btn-search:active,
+.feed-page .btn-search:hover,
+.feed-page .btn-toggle:active,
+.feed-page .btn-toggle:hover,
+.feed-page .scroll-to-top:active,
+.feed-page .scroll-to-top:hover {
+    transform: none !important;
+}
+
+/* Leaflet Map popup customization */
+.leaflet-popup-content-wrapper {
+    border-radius: var(--radius);
+    font-family: var(--font-main);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    border: 1px solid var(--border-color);
+}
+
+.leaflet-popup-content {
+    margin: 12px;
+    font-size: 0.9rem;
+    color: var(--text-main);
+}
+
+.leaflet-popup-content h4 {
+    font-weight: 700;
+    margin-bottom: 5px;
+    font-size: 0.95rem;
+}
+
+.leaflet-popup-content p {
+    margin: 3px 0;
+    color: var(--text-muted);
+}
+
+/* Active Indicator in Navigation */
+.navbar-links a.active {
+    color: var(--primary-color) !important;
+    position: relative;
+}
+
+.navbar-links a.active::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: var(--primary-color);
+    border-radius: 2px;
+}
+
+/* Filter responsiveness */
+@media (max-width: 768px) {
+    .feed-filters-card .second-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+    }
+    .filter-distance {
+        max-width: none;
+    }
+}
+
+/* Hidden view helper for robust Leaflet layout sizing */
+.hidden-view {
+    height: 0 !important;
+    min-height: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    border-top-width: 0 !important;
+    border-bottom-width: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
