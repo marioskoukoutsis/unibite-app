@@ -408,6 +408,221 @@ document.addEventListener('DOMContentLoaded', () => {
         btnDetectGps.addEventListener('click', detectCookLocation);
     }
 
+    // --- MOBILE DETECTION & PHOTO UI ---
+    // Ανίχνευση κινητού: χρησιμοποιούμε pointer:coarse (touchscreen) + πλάτος οθόνης
+    // Αυτός ο συνδυασμός πιάνει κινητά/tablets αλλά ΟΧΙ desktops με touch screen
+    const isMobileDevice = (() => {
+        const hasCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
+        const isNarrowScreen = window.innerWidth <= 1024;
+        const hasTouchPoints = navigator.maxTouchPoints > 0;
+        // Πρέπει να έχει touch ΚΑΙ μικρή οθόνη για να θεωρηθεί κινητό
+        return (hasCoarsePointer || hasTouchPoints) && isNarrowScreen;
+    })();
+
+    const btnTakePhoto = document.getElementById('btn-take-photo');
+    const btnPickGallery = document.getElementById('btn-pick-gallery');
+    const galleryBtnText = document.getElementById('gallery-btn-text');
+    const photoInput = document.getElementById('photo');          // Gallery (χωρίς capture)
+    const photoCameraInput = document.getElementById('photo-camera'); // Camera (capture="environment")
+    const photoPreviewContainer = document.getElementById('photo-preview-container');
+    const photoPreviewImg = document.getElementById('photo-preview-img');
+    const btnRemovePhoto = document.getElementById('btn-remove-photo');
+
+    // Μεταβλητή που κρατάει το τρέχον αρχείο (είτε από κάμερα είτε από gallery)
+    let selectedPhotoFile = null;
+    let isPhotoSafe = true; // Flag: η φωτογραφία πέρασε τον έλεγχο;
+
+    // --- NSFW DETECTION (Client-side, NSFWJS + TensorFlow.js) ---
+    // Το μοντέλο τρέχει 100% στον browser — καμία φωτογραφία δεν αποστέλλεται πουθενά.
+    let nsfwModel = null;
+    let nsfwModelLoading = false;
+
+    async function loadNsfwModel() {
+        if (nsfwModel) return nsfwModel;
+        if (nsfwModelLoading) {
+            // Περίμενε αν ήδη φορτώνει
+            while (nsfwModelLoading) {
+                await new Promise(r => setTimeout(r, 100));
+            }
+            return nsfwModel;
+        }
+
+        nsfwModelLoading = true;
+        try {
+            // Ελέγχουμε αν η βιβλιοθήκη φορτώθηκε
+            if (typeof nsfwjs === 'undefined') {
+                console.warn('NSFWJS library not loaded. Skipping content check.');
+                nsfwModelLoading = false;
+                return null;
+            }
+            nsfwModel = await nsfwjs.load();
+            console.log('✅ NSFW model loaded successfully');
+        } catch (e) {
+            console.error('Failed to load NSFW model:', e);
+            nsfwModel = null;
+        }
+        nsfwModelLoading = false;
+        return nsfwModel;
+    }
+
+    // Overlay elements
+    const nsfwOverlay = document.getElementById('nsfw-overlay');
+    const nsfwOverlayIcon = document.getElementById('nsfw-overlay-icon');
+    const nsfwOverlayText = document.getElementById('nsfw-overlay-text');
+
+    function showNsfwOverlay(state, icon, text) {
+        if (!nsfwOverlay) return;
+        nsfwOverlay.className = 'nsfw-overlay ' + state; // checking | safe | rejected
+        nsfwOverlayIcon.textContent = icon;
+        nsfwOverlayText.textContent = text;
+        nsfwOverlay.style.display = 'flex';
+    }
+
+    function hideNsfwOverlay() {
+        if (!nsfwOverlay) return;
+        nsfwOverlay.style.display = 'none';
+        nsfwOverlay.className = 'nsfw-overlay';
+    }
+
+    // Ελέγχει αν η εικόνα είναι ακατάλληλη.
+    // Κατώφλια: Porn > 0.20, Hentai > 0.20, Sexy > 0.45 → ΑΠΟΡΡΙΨΗ
+    async function checkPhotoNSFW(imgElement) {
+        const model = await loadNsfwModel();
+        if (!model) {
+            // Αν δεν φόρτωσε το μοντέλο, αφήνουμε τη φωτογραφία
+            console.warn('NSFW model unavailable — skipping check.');
+            return true; // safe by default
+        }
+
+        try {
+            const predictions = await model.classify(imgElement);
+            console.log('NSFW predictions:', predictions);
+
+            const getScore = (className) => {
+                const pred = predictions.find(p => p.className === className);
+                return pred ? pred.probability : 0;
+            };
+
+            const pornScore = getScore('Porn');
+            const hentaiScore = getScore('Hentai');
+            const sexyScore = getScore('Sexy');
+
+            if (pornScore > 0.20 || hentaiScore > 0.20 || sexyScore > 0.45) {
+                console.warn(`❌ NSFW detected — Porn: ${(pornScore*100).toFixed(1)}%, Hentai: ${(hentaiScore*100).toFixed(1)}%, Sexy: ${(sexyScore*100).toFixed(1)}%`);
+                return false; // NOT safe
+            }
+
+            return true; // safe
+        } catch (e) {
+            console.error('NSFW classification error:', e);
+            return true; // safe by default on error
+        }
+    }
+
+    if (isMobileDevice) {
+        // --- ΚΙΝΗΤΟ: Εμφανίζουμε και τα δύο κουμπιά ---
+        if (btnTakePhoto) btnTakePhoto.style.display = 'inline-flex';
+        if (galleryBtnText) galleryBtnText.textContent = 'Επίλεξε από Συλλογή';
+    } else {
+        // --- ΥΠΟΛΟΓΙΣΤΗΣ: Μόνο το gallery button (αρχεία) ---
+        if (btnTakePhoto) btnTakePhoto.style.display = 'none';
+        if (galleryBtnText) galleryBtnText.textContent = 'Επίλεξε από Αρχεία';
+    }
+
+    // Κουμπί "Βγάλε Φωτογραφία" → ανοίγει camera input
+    if (btnTakePhoto) {
+        btnTakePhoto.addEventListener('click', () => {
+            photoCameraInput.click();
+        });
+    }
+
+    // Κουμπί "Επίλεξε από Συλλογή/Αρχεία" → ανοίγει gallery input
+    if (btnPickGallery) {
+        btnPickGallery.addEventListener('click', () => {
+            photoInput.click();
+        });
+    }
+
+    // Κοινή function: όταν επιλεγεί αρχείο, δείξε preview + τρέξε NSFW check
+    async function handlePhotoSelected(file) {
+        if (!file) return;
+
+        // Δείξε preview αμέσως
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            photoPreviewImg.src = e.target.result;
+            photoPreviewContainer.style.display = 'block';
+
+            // Αρχίζει ο έλεγχος — δείξε overlay "Έλεγχος..."
+            isPhotoSafe = false;
+            showNsfwOverlay('checking', '🔍', 'Έλεγχος φωτογραφίας...');
+
+            // Περίμενε η εικόνα να φορτωθεί πλήρως πριν τη στείλεις στο μοντέλο
+            const tempImg = new Image();
+            tempImg.crossOrigin = 'anonymous';
+            tempImg.onload = async () => {
+                const safe = await checkPhotoNSFW(tempImg);
+
+                if (safe) {
+                    // ✅ Ασφαλής φωτογραφία
+                    selectedPhotoFile = file;
+                    isPhotoSafe = true;
+                    showNsfwOverlay('safe', '✅', 'Η φωτογραφία εγκρίθηκε!');
+                    // Κρύψε το overlay μετά από λίγο
+                    setTimeout(() => hideNsfwOverlay(), 1200);
+                } else {
+                    // ❌ Ακατάλληλο περιεχόμενο
+                    selectedPhotoFile = null;
+                    isPhotoSafe = true; // Reset flag αφού αφαιρέθηκε
+                    showNsfwOverlay('rejected', '🚫', 'Ακατάλληλο περιεχόμενο! Η φωτογραφία απορρίφθηκε.');
+
+                    // Καθαρισμός μετά από 2.5 δευτερόλεπτα
+                    setTimeout(() => {
+                        photoInput.value = '';
+                        photoCameraInput.value = '';
+                        photoPreviewContainer.style.display = 'none';
+                        photoPreviewImg.src = '';
+                        hideNsfwOverlay();
+                    }, 2500);
+                }
+            };
+            tempImg.onerror = () => {
+                // Αν αποτύχει το load, αφήνουμε τη φωτογραφία
+                selectedPhotoFile = file;
+                isPhotoSafe = true;
+                hideNsfwOverlay();
+            };
+            tempImg.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Ακούμε αλλαγές και στα δύο inputs
+    photoInput.addEventListener('change', () => {
+        if (photoInput.files.length > 0) {
+            handlePhotoSelected(photoInput.files[0]);
+        }
+    });
+
+    photoCameraInput.addEventListener('change', () => {
+        if (photoCameraInput.files.length > 0) {
+            handlePhotoSelected(photoCameraInput.files[0]);
+        }
+    });
+
+    // Κουμπί αφαίρεσης φωτογραφίας
+    if (btnRemovePhoto) {
+        btnRemovePhoto.addEventListener('click', () => {
+            selectedPhotoFile = null;
+            isPhotoSafe = true;
+            photoInput.value = '';
+            photoCameraInput.value = '';
+            photoPreviewContainer.style.display = 'none';
+            photoPreviewImg.src = '';
+            hideNsfwOverlay();
+        });
+    }
+
     // Συμπίεση & Resize φωτογραφίας πριν την αποστολή
     // Οι φωτογραφίες κινητού είναι συχνά 5-15MB+ και σπάνε το όριο του server.
     // Μειώνουμε σε max 1200px και JPEG quality 0.7 (~100-300KB τελικό μέγεθος).
@@ -452,12 +667,18 @@ document.addEventListener('DOMContentLoaded', () => {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        // Αν ο έλεγχος φωτογραφίας ακόμα τρέχει, μπλόκαρε
+        if (!isPhotoSafe) {
+            messageDiv.style.color = '#f59e0b';
+            messageDiv.textContent = 'Περίμενε... ο έλεγχος φωτογραφίας δεν έχει ολοκληρωθεί ακόμα.';
+            return;
+        }
+
         const editId = document.getElementById('edit-listing-id').value; // Ελέγχουμε αν κάνουμε Edit
 
-        const photoInput = document.getElementById('photo');
         let photoBase64String = null;
-        if (photoInput.files.length > 0) {
-            photoBase64String = await getBase64(photoInput.files[0]);
+        if (selectedPhotoFile) {
+            photoBase64String = await getBase64(selectedPhotoFile);
         }
 
         const allergensInput = document.getElementById('allergens').value;
@@ -611,6 +832,15 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('submit-btn').textContent = 'Ανέβασμα Αγγελίας';
         document.getElementById('cancel-edit-btn').style.display = 'none';
         messageDiv.textContent = '';
+
+        // Καθαρισμός φωτογραφίας
+        selectedPhotoFile = null;
+        isPhotoSafe = true;
+        photoInput.value = '';
+        photoCameraInput.value = '';
+        photoPreviewContainer.style.display = 'none';
+        photoPreviewImg.src = '';
+        hideNsfwOverlay();
 
         if (cookMap) {
             initCookMap(40.6401, 22.9444, 13);
