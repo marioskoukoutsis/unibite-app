@@ -9,6 +9,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
     <!-- Leaflet.js JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <!-- TensorFlow.js + NSFWJS for client-side content moderation -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.2/dist/nsfwjs.min.js" defer></script>
 </head>
 <body>
 
@@ -46,8 +49,44 @@
             </div>
 
             <div class="form-group">
-                <label for="photo">Φωτογραφία (Προαιρετικά)</label>
-                <input type="file" id="photo" class="form-control" accept="image/*" style="border: none; padding-left: 0; background: transparent;">
+                <label>Φωτογραφία (Προαιρετικά)</label>
+                <!-- Hidden file inputs -->
+                <input type="file" id="photo" accept="image/*" style="display: none;">
+                <input type="file" id="photo-camera" accept="image/*" capture="environment" style="display: none;">
+
+                <!-- Photo action buttons -->
+                <div id="photo-actions" class="photo-actions">
+                    <!-- Camera button: ONLY visible on mobile -->
+                    <button type="button" id="btn-take-photo" class="photo-btn photo-btn-camera" style="display: none;">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                            <circle cx="12" cy="13" r="4"></circle>
+                        </svg>
+                        Βγάλε Φωτογραφία
+                    </button>
+                    <!-- Gallery button: visible on all devices -->
+                    <button type="button" id="btn-pick-gallery" class="photo-btn photo-btn-gallery">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                        <span id="gallery-btn-text">Επίλεξε από Αρχεία</span>
+                    </button>
+                </div>
+
+                <!-- Image preview -->
+                <div id="photo-preview-container" class="photo-preview-container" style="display: none;">
+                    <img id="photo-preview-img" class="photo-preview-img" alt="Προεπισκόπηση">
+                    <button type="button" id="btn-remove-photo" class="photo-btn-remove" title="Αφαίρεση φωτογραφίας">✕</button>
+                    <!-- NSFW check overlay -->
+                    <div id="nsfw-overlay" class="nsfw-overlay" style="display: none;">
+                        <div class="nsfw-overlay-content">
+                            <span id="nsfw-overlay-icon" class="nsfw-overlay-icon">🔍</span>
+                            <span id="nsfw-overlay-text" class="nsfw-overlay-text">Έλεγχος φωτογραφίας...</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div style="display: flex; gap: 20px; flex-wrap: wrap;">

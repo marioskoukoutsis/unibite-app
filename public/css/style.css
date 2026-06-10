@@ -1249,4 +1249,228 @@ body {
     transform: translateY(-50%) !important;
 }
 
+/* =========================================
+   11. PHOTO UPLOAD (Mobile Camera / Gallery)
+   ========================================= */
+
+/* Container for photo action buttons */
+.photo-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+/* Shared base style for photo buttons */
+.photo-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0.75rem 1.2rem;
+    border-radius: 10px;
+    font-family: var(--font-main);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    flex: 1;
+    border: none;
+}
+
+.photo-btn svg {
+    flex-shrink: 0;
+}
+
+/* Camera button - Primary/accent style (mobile only) */
+.photo-btn-camera {
+    background: linear-gradient(135deg, #e05d3a, #c44d2d);
+    color: white;
+    box-shadow: 0 4px 14px rgba(224, 93, 58, 0.25);
+}
+
+.photo-btn-camera:hover {
+    box-shadow: 0 6px 20px rgba(224, 93, 58, 0.35);
+    transform: translateY(-2px);
+}
+
+.photo-btn-camera:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(224, 93, 58, 0.2);
+}
+
+/* Gallery button - Secondary/outline style */
+.photo-btn-gallery {
+    background: var(--card-bg);
+    color: var(--text-main);
+    border: 1.5px solid var(--border-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.photo-btn-gallery:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    box-shadow: 0 4px 12px rgba(224, 93, 58, 0.1);
+    transform: translateY(-2px);
+}
+
+.photo-btn-gallery:active {
+    transform: translateY(0);
+}
+
+/* Photo preview container */
+.photo-preview-container {
+    position: relative;
+    margin-top: 12px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid var(--border-color);
+    background: var(--bg-color);
+    animation: previewFadeIn 0.3s ease;
+}
+
+@keyframes previewFadeIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+.photo-preview-img {
+    width: 100%;
+    max-height: 260px;
+    object-fit: cover;
+    display: block;
+}
+
+/* Remove photo button (X) */
+.photo-btn-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.photo-btn-remove:hover {
+    background: #ef4444;
+    transform: scale(1.1);
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 768px) {
+    .photo-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .photo-btn {
+        padding: 0.85rem 1rem;
+        font-size: 0.95rem;
+    }
+    
+    .photo-preview-img {
+        max-height: 220px;
+    }
+}
+
+/* =========================================
+   12. NSFW CONTENT CHECK OVERLAY
+   ========================================= */
+
+/* Full-cover overlay on top of the photo preview */
+.nsfw-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    border-radius: 12px;
+    transition: background 0.3s ease;
+}
+
+/* While checking: blurred background */
+.nsfw-overlay.checking {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+/* Success flash: green tint */
+.nsfw-overlay.safe {
+    background: rgba(16, 185, 129, 0.2);
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+    animation: nsfwSafeFade 1.2s ease forwards;
+}
+
+@keyframes nsfwSafeFade {
+    0%   { background: rgba(16, 185, 129, 0.25); opacity: 1; }
+    60%  { background: rgba(16, 185, 129, 0.1); opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* Rejected: red tint with heavy blur */
+.nsfw-overlay.rejected {
+    background: rgba(239, 68, 68, 0.35);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+.nsfw-overlay-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+    padding: 1rem;
+}
+
+.nsfw-overlay-icon {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+/* Spinning animation for the checking icon */
+.nsfw-overlay.checking .nsfw-overlay-icon {
+    animation: nsfwSpin 1.2s linear infinite;
+}
+
+@keyframes nsfwSpin {
+    0%   { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.nsfw-overlay-text {
+    font-family: var(--font-main);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main);
+    letter-spacing: -0.01em;
+}
+
+.nsfw-overlay.rejected .nsfw-overlay-text {
+    color: #991b1b;
+    font-weight: 700;
+}
+
+.nsfw-overlay.safe .nsfw-overlay-text {
+    color: #065f46;
+    font-weight: 700;
+}
 
