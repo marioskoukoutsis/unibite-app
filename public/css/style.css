@@ -69,16 +69,16 @@ body {
     letter-spacing: -1px; /* Σφιχτά γράμματα */
 }
 
-/* Styling for the logo in the top Navigation Bar */
+/* λογότυπο στο πάνω μενού */
 .logo-img-nav {
-    max-height: 90px; /* Adjust this number to make it bigger or smaller in the menu */
+    max-height: 90px; /* μέγεθος λογότυπου στο μενού */
     width: auto;
     object-fit: contain;
 }
 
-/* Styling for the logo on the Landing Page (index.html) */
+/* λογότυπο στην αρχική σελίδα (index.html) */
 .logo-img-large {
-    max-height: 160px; /* Adjust this to make it bigger or smaller on the welcome screen */
+    max-height: 160px; /* μέγεθος λογότυπου στην αρχική */
     width: auto;
     object-fit: contain;
 }
@@ -244,7 +244,7 @@ body {
    6. RATING SYSTEM (Premium Interactive Stars)
    ========================================= */
 
-/* --- Rating Container (Wrapper) --- */
+/* περιοχή αξιολόγησης */
 .rating-container {
     margin-top: 18px;
     border-top: 1px solid var(--border-color);
@@ -258,7 +258,7 @@ body {
     margin-bottom: 12px;
 }
 
-/* --- Interactive Star Picker --- */
+/* διαδραστικά αστέρια */
 .star-picker {
     display: flex;
     gap: 6px;
@@ -296,7 +296,7 @@ body {
     100% { transform: scale(1); }
 }
 
-/* --- Rating Description Label --- */
+/* περιγραφή βαθμολογίας */
 .rating-label {
     min-height: 48px;
     margin-bottom: 14px;
@@ -315,14 +315,14 @@ body {
     line-height: 1.4;
 }
 
-/* Color coding per rating level */
+/* χρώμα ανά επίπεδο βαθμολογίας */
 .rating-label[data-level="1"] .label-title { color: #ef4444; }
 .rating-label[data-level="2"] .label-title { color: #f97316; }
 .rating-label[data-level="3"] .label-title { color: #eab308; }
 .rating-label[data-level="4"] .label-title { color: #22c55e; }
 .rating-label[data-level="5"] .label-title { color: #10b981; }
 
-/* --- Submit Rating Button --- */
+/* κουμπί υποβολής βαθμολογίας */
 .btn-submit-rating {
     display: inline-flex;
     align-items: center;
@@ -356,7 +356,7 @@ body {
     box-shadow: none;
 }
 
-/* --- Submitted Rating Display (Consumer Side) --- */
+/* εμφάνιση καταχωρημένης βαθμολογίας (πλευρά καταναλωτή) */
 .rating-display {
     display: flex;
     align-items: center;
@@ -380,7 +380,7 @@ body {
     font-weight: 500;
 }
 
-/* --- Cook-side Rating Badge --- */
+/* badge βαθμολογίας στην πλευρά του μάγειρα */
 .rating-badge-cook {
     display: inline-flex;
     align-items: center;
@@ -418,7 +418,7 @@ body {
    7. STATS & LEADERBOARD PAGE
    ========================================= */
 
-/* --- Overview Stat Cards --- */
+/* κάρτες σύνοψης στατιστικών */
 .stats-overview {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -463,7 +463,7 @@ body {
     letter-spacing: 0.5px;
 }
 
-/* --- Leaderboard Rows --- */
+/* γραμμές κατάταξης */
 .lb-row {
     display: flex;
     align-items: center;
@@ -550,7 +550,7 @@ body {
     font-weight: 500;
 }
 
-/* --- Top Meals Rows --- */
+/* γραμμές κορυφαίων γευμάτων */
 .meal-row {
     display: flex;
     justify-content: space-between;
@@ -577,7 +577,7 @@ body {
 .meal-avg { font-weight: 700; font-size: 1rem; color: #b45309; }
 .meal-count { font-size: 0.75rem; color: var(--text-muted); }
 
-/* --- Stats Responsive --- */
+/* στατιστικά σε μικρές οθόνες */
 @media (max-width: 768px) {
     .stats-overview {
         grid-template-columns: 1fr;
@@ -602,7 +602,7 @@ body {
    8. ADMIN PORTAL (Tabs, Rows, Actions)
    ========================================= */
 
-/* --- Tab Navigation --- */
+/* μενού tabs */
 .admin-tabs {
     display: flex;
     gap: 4px;
@@ -639,7 +639,7 @@ body {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* --- Tab Content --- */
+/* περιεχόμενο tab */
 .admin-tab-content {
     display: none;
 }
@@ -654,7 +654,7 @@ body {
     to   { opacity: 1; transform: translateY(0); }
 }
 
-/* --- Search Bar --- */
+/* μπάρα αναζήτησης */
 .admin-search-bar {
     margin-bottom: 1.5rem;
 }
@@ -682,7 +682,7 @@ body {
     color: #a1a1aa;
 }
 
-/* --- Admin Row (Users, Listings, Requests) --- */
+/* γραμμή admin (χρήστες, αγγελίες, αιτήματα) */
 .admin-row {
     display: flex;
     align-items: center;
@@ -736,7 +736,7 @@ body {
     color: var(--text-muted);
 }
 
-/* --- Action Buttons --- */
+/* κουμπιά ενεργειών */
 .admin-row-actions {
     display: flex;
     gap: 8px;
@@ -780,7 +780,7 @@ body {
     transform: translateY(-1px);
 }
 
-/* --- Admin Responsive --- */
+/* admin σε μικρές οθόνες */
 @media (max-width: 768px) {
     .admin-tabs {
         flex-wrap: wrap;
@@ -861,19 +861,19 @@ body {
    10. FEED PAGE - MAP, FILTERS, & POLISH
    ========================================= */
 
-/* Make the feed page container wider on desktop */
+/* πιο φαρδύ container στο feed σε desktop */
 .feed-page .container {
     max-width: 1100px;
 }
 
-/* Adjust feed grid to show multi-column on desktop */
+/* πολλές στήλες στο feed grid σε desktop */
 .feed-page .feed-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 1.5rem;
 }
 
-/* Glassmorphism/premium style for filters card */
+/* glassmorphism στην κάρτα φίλτρων */
 .feed-filters-card {
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(16px);
@@ -884,7 +884,7 @@ body {
     box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04);
 }
 
-/* Address search layout (Vertical Stack) */
+/* διάταξη αναζήτησης διεύθυνσης (κάθετα) */
 .address-input-wrapper {
     display: flex;
     flex-direction: column;
@@ -893,7 +893,7 @@ body {
     width: 100%;
 }
 
-/* Custom isolated Address Input class */
+/* ξεχωριστή κλάση για το input διεύθυνσης */
 .address-input {
     width: 100%;
     padding: 0.85rem 1.2rem !important;
@@ -937,7 +937,7 @@ body {
     box-shadow: 0 4px 16px rgba(224, 93, 58, 0.2);
 }
 
-/* Second filter row (Distance & View toggle) */
+/* δεύτερη σειρά φίλτρων (απόσταση & εναλλαγή προβολής) */
 .feed-filters-card .second-row {
     display: flex;
     justify-content: space-between;
@@ -956,7 +956,7 @@ body {
     max-width: 350px;
 }
 
-/* Premium slider styling */
+/* εμφάνιση slider */
 .slider {
     -webkit-appearance: none;
     width: 100%;
@@ -1004,7 +1004,7 @@ body {
     gap: 6px;
 }
 
-/* Segmented Control / View Toggle styling */
+/* εναλλαγή προβολής (λίστα/χάρτης) */
 .toggle-group {
     display: inline-flex;
     background: var(--bg-color);
@@ -1036,7 +1036,7 @@ body {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Distance pill badge on cards */
+/* badge απόστασης στις κάρτες */
 .distance-badge-pill {
     display: inline-flex;
     align-items: center;
@@ -1051,7 +1051,7 @@ body {
     width: fit-content;
 }
 
-/* Allergen Pills styling */
+/* ετικέτες αλλεργιογόνων */
 .allergen-pills-container {
     display: flex;
     flex-wrap: wrap;
@@ -1070,7 +1070,7 @@ body {
     font-weight: 600;
 }
 
-/* Sold-out style overlay */
+/* στυλ για εξαντλημένες αγγελίες */
 .card.sold-out {
     opacity: 0.65;
     position: relative;
@@ -1091,14 +1091,14 @@ body {
     z-index: 10;
 }
 
-/* Card hover & smooth animations */
+/* hover καρτών & ομαλά animations */
 .feed-page .card {
     transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
     animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 #map-view-container {
-    animation: none !important; /* Prevents Leaflet container size mismatch during page animation */
+    animation: none !important; /* αποφεύγει λάθος μέγεθος του χάρτη Leaflet κατά το animation */
 }
 
 .feed-page .card:hover {
@@ -1117,7 +1117,7 @@ body {
     }
 }
 
-/* Prevent any buttons from moving (no translation/scale shifts) on hover or active/touch */
+/* τα κουμπιά να μην κουνιούνται σε hover/active/touch */
 .feed-page button:active, 
 .feed-page button:hover, 
 .feed-page .btn:active, 
@@ -1133,7 +1133,7 @@ body {
     transform: none !important;
 }
 
-/* Leaflet Map popup customization */
+/* προσαρμογή των popup του χάρτη */
 .leaflet-popup-content-wrapper {
     border-radius: var(--radius);
     font-family: var(--font-main);
@@ -1158,7 +1158,7 @@ body {
     color: var(--text-muted);
 }
 
-/* Active Indicator in Navigation */
+/* ένδειξη ενεργής σελίδας στο μενού */
 .navbar-links a.active {
     color: var(--primary-color) !important;
     position: relative;
@@ -1175,7 +1175,7 @@ body {
     border-radius: 2px;
 }
 
-/* Filter responsiveness */
+/* φίλτρα σε μικρές οθόνες */
 @media (max-width: 768px) {
     .feed-filters-card .second-row {
         flex-direction: column;
@@ -1187,7 +1187,7 @@ body {
     }
 }
 
-/* Hidden view helper for robust Leaflet layout sizing */
+/* βοηθητικό κρυφό view για σωστό μέγεθος του χάρτη */
 .hidden-view {
     height: 0 !important;
     min-height: 0 !important;
@@ -1253,14 +1253,14 @@ body {
    11. PHOTO UPLOAD (Mobile Camera / Gallery)
    ========================================= */
 
-/* Container for photo action buttons */
+/* container για τα κουμπιά φωτογραφίας */
 .photo-actions {
     display: flex;
     gap: 10px;
     margin-top: 8px;
 }
 
-/* Shared base style for photo buttons */
+/* κοινό στυλ για τα κουμπιά φωτογραφίας */
 .photo-btn {
     display: inline-flex;
     align-items: center;
@@ -1281,7 +1281,7 @@ body {
     flex-shrink: 0;
 }
 
-/* Camera button - Primary/accent style (mobile only) */
+/* κουμπί κάμερας — κύριο στυλ (μόνο κινητό) */
 .photo-btn-camera {
     background: linear-gradient(135deg, #e05d3a, #c44d2d);
     color: white;
@@ -1298,7 +1298,7 @@ body {
     box-shadow: 0 2px 8px rgba(224, 93, 58, 0.2);
 }
 
-/* Gallery button - Secondary/outline style */
+/* κουμπί συλλογής — δευτερεύον στυλ (outline) */
 .photo-btn-gallery {
     background: var(--card-bg);
     color: var(--text-main);
@@ -1317,7 +1317,7 @@ body {
     transform: translateY(0);
 }
 
-/* Photo preview container */
+/* container προεπισκόπησης φωτογραφίας */
 .photo-preview-container {
     position: relative;
     margin-top: 12px;
@@ -1340,7 +1340,7 @@ body {
     display: block;
 }
 
-/* Remove photo button (X) */
+/* κουμπί αφαίρεσης φωτογραφίας (X) */
 .photo-btn-remove {
     position: absolute;
     top: 8px;
@@ -1368,7 +1368,7 @@ body {
     transform: scale(1.1);
 }
 
-/* Mobile-specific adjustments */
+/* προσαρμογές ειδικά για κινητά */
 @media (max-width: 768px) {
     .photo-actions {
         flex-direction: column;
@@ -1383,94 +1383,5 @@ body {
     .photo-preview-img {
         max-height: 220px;
     }
-}
-
-/* =========================================
-   12. NSFW CONTENT CHECK OVERLAY
-   ========================================= */
-
-/* Full-cover overlay on top of the photo preview */
-.nsfw-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 5;
-    border-radius: 12px;
-    transition: background 0.3s ease;
-}
-
-/* While checking: blurred background */
-.nsfw-overlay.checking {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-}
-
-/* Success flash: green tint */
-.nsfw-overlay.safe {
-    background: rgba(16, 185, 129, 0.2);
-    backdrop-filter: blur(0px);
-    -webkit-backdrop-filter: blur(0px);
-    animation: nsfwSafeFade 1.2s ease forwards;
-}
-
-@keyframes nsfwSafeFade {
-    0%   { background: rgba(16, 185, 129, 0.25); opacity: 1; }
-    60%  { background: rgba(16, 185, 129, 0.1); opacity: 1; }
-    100% { opacity: 0; }
-}
-
-/* Rejected: red tint with heavy blur */
-.nsfw-overlay.rejected {
-    background: rgba(239, 68, 68, 0.35);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-}
-
-.nsfw-overlay-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    text-align: center;
-    padding: 1rem;
-}
-
-.nsfw-overlay-icon {
-    font-size: 2rem;
-    line-height: 1;
-}
-
-/* Spinning animation for the checking icon */
-.nsfw-overlay.checking .nsfw-overlay-icon {
-    animation: nsfwSpin 1.2s linear infinite;
-}
-
-@keyframes nsfwSpin {
-    0%   { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-.nsfw-overlay-text {
-    font-family: var(--font-main);
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--text-main);
-    letter-spacing: -0.01em;
-}
-
-.nsfw-overlay.rejected .nsfw-overlay-text {
-    color: #991b1b;
-    font-weight: 700;
-}
-
-.nsfw-overlay.safe .nsfw-overlay-text {
-    color: #065f46;
-    font-weight: 700;
 }
 

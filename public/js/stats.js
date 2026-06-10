@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const user = JSON.parse(storedUser);
 
-    // --- Admin link injection αν είναι admin ---
+    // προσθήκη Admin Portal στο μενού αν είναι admin
     if (user.role === 'admin') {
         const navLinks = document.querySelector('.navbar-links');
         const adminLink = document.createElement('a');
@@ -30,15 +30,15 @@ async function loadLeaderboard() {
             throw new Error(data.error || 'Σφάλμα API');
         }
 
-        // --- Overview Stats ---
+        // συγκεντρωτικοί αριθμοί
         animateCounter('stat-total-portions', data.totalPortions);
         animateCounter('stat-monthly-portions', data.monthlyPortions);
         animateCounter('stat-total-cooks', data.totalCooks);
 
-        // --- Top Cooks Leaderboard ---
+        // κατάταξη μαγείρων
         renderLeaderboard(data.topCooks);
 
-        // --- Top Meals ---
+        // κορυφαία γεύματα
         renderTopMeals(data.topMeals);
 
     } catch (error) {
@@ -48,7 +48,7 @@ async function loadLeaderboard() {
     }
 }
 
-// --- Animated Counter ---
+// μετρητής που ανεβαίνει σταδιακά μέχρι τον στόχο
 function animateCounter(elementId, target) {
     const el = document.getElementById(elementId);
     if (!el) return;
@@ -67,7 +67,7 @@ function animateCounter(elementId, target) {
     requestAnimationFrame(step);
 }
 
-// --- Leaderboard Rendering ---
+// εμφάνιση κατάταξης μαγείρων
 function renderLeaderboard(cooks) {
     const container = document.getElementById('leaderboard-container');
     container.innerHTML = '';
@@ -83,14 +83,14 @@ function renderLeaderboard(cooks) {
         row.className = 'lb-row';
         if (rank <= 3) row.classList.add('lb-top');
 
-        // Medal / rank display
+        // μετάλλιο για top-3, αλλιώς νούμερο θέσης
         let rankDisplay = '';
         if (rank === 1) rankDisplay = '<span class="lb-medal gold">🥇</span>';
         else if (rank === 2) rankDisplay = '<span class="lb-medal silver">🥈</span>';
         else if (rank === 3) rankDisplay = '<span class="lb-medal bronze">🥉</span>';
         else rankDisplay = `<span class="lb-rank">${rank}</span>`;
 
-        // Rating stars
+        // αστέρια μέσης βαθμολογίας
         let ratingHtml = '';
         if (cook.avg_rating) {
             const r = Number(cook.avg_rating);
@@ -113,7 +113,7 @@ function renderLeaderboard(cooks) {
             </div>
         `;
 
-        // Staggered entrance animation
+        // σταδιακή εμφάνιση η μία γραμμή μετά την άλλη
         row.style.opacity = '0';
         row.style.transform = 'translateY(12px)';
         setTimeout(() => {
@@ -126,7 +126,7 @@ function renderLeaderboard(cooks) {
     });
 }
 
-// --- Top Meals Rendering ---
+// εμφάνιση κορυφαίων γευμάτων
 function renderTopMeals(meals) {
     const container = document.getElementById('top-meals-container');
     container.innerHTML = '';
@@ -156,7 +156,7 @@ function renderTopMeals(meals) {
             </div>
         `;
 
-        // Staggered entrance animation
+        // σταδιακή εμφάνιση η μία γραμμή μετά την άλλη
         row.style.opacity = '0';
         row.style.transform = 'translateY(12px)';
         setTimeout(() => {

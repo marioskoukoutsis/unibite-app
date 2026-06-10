@@ -1,6 +1,6 @@
 const pool = require('../config/db');
 
-// --- ΥΠΑΡΧΟΝ: Στατιστικά Μήνα ---
+// Στατιστικά μήνα για το admin dashboard
 exports.getStats = async (req, res) => {
     try {
         const [[portionsResult]] = await pool.query(`
@@ -44,7 +44,7 @@ exports.getStats = async (req, res) => {
 
 
 
-// --- Λίστα Όλων των Αγγελιών (ενεργές + ανενεργές + διαγραμμένες) ---
+// Όλες οι αγγελίες (ενεργές, ανενεργές, διαγραμμένες)
 exports.getAllListings = async (req, res) => {
     try {
         const [listings] = await pool.query(`
@@ -53,6 +53,19 @@ exports.getAllListings = async (req, res) => {
             JOIN users u ON l.cook_id = u.id
             ORDER BY l.created_at DESC
         `);
+
+        // Υπολογίζουμε την πραγματική κατάσταση: >48h → διεγραμμένη, 0 μερίδες → ανενεργή
+        const EXPIRY_MS = 48 * 60 * 60 * 1000;
+        const now = Date.now();
+        listings.forEach(l => {
+            if (l.status === 'deleted') return; // χειροκίνητη διαγραφή — μένει ως έχει
+            if (now - new Date(l.created_at).getTime() > EXPIRY_MS) {
+                l.status = 'deleted';
+            } else if (l.available_portions <= 0) {
+                l.status = 'inactive';
+            }
+        });
+
         res.json(listings);
     } catch (error) {
         console.error('Σφάλμα getAllListings:', error);
@@ -60,7 +73,7 @@ exports.getAllListings = async (req, res) => {
     }
 };
 
-// --- Διαγραφή Αγγελίας (Admin) ---
+// Διαγραφή αγγελίας από admin (soft delete)
 exports.deleteListing = async (req, res) => {
     try {
         const listingId = req.params.id;
@@ -71,7 +84,7 @@ exports.deleteListing = async (req, res) => {
             return res.status(404).json({ error: 'Η αγγελία δεν βρέθηκε.' });
         }
 
-        // Απορρίπτουμε και τα εκκρεμή αιτήματα
+        // απόρριψη και των ανοιχτών αιτημάτων της
         await pool.query(
             `UPDATE requests SET status = 'rejected' WHERE listing_id = ? AND status IN ('pending', 'approved')`,
             [listingId]
@@ -84,7 +97,7 @@ exports.deleteListing = async (req, res) => {
     }
 };
 
-// --- Πρόσφατα Αιτήματα (48 ώρες) ---
+// Τα 50 πιο πρόσφατα αιτήματα
 exports.getRecentRequests = async (req, res) => {
     try {
         const [requests] = await pool.query(`

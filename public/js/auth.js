@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Έλεγχος: Αν είναι ήδη συνδεδεμένος, προσπερνάει το Login!
+    // ήδη συνδεδεμένος → κατευθείαν στην αρχική
     if (localStorage.getItem('user')) {
         window.location.href = 'index.html';
         return;
@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleRegisterBtn = document.getElementById('toggle-register');
     const authMessage = document.getElementById('auth-message');
 
-    // Εναλλαγή μεταξύ Login και Register
+    // εναλλαγή φόρμας login / register
     if (toggleRegisterBtn) {
         toggleRegisterBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Λειτουργία Εμφάνισης Κωδικού
+    // εμφάνιση/απόκρυψη κωδικού
     document.getElementById('show-login-pass').addEventListener('change', function() {
         document.getElementById('login-password').type = this.checked ? 'text' : 'password';
     });
@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- ΛΕΙΤΟΥΡΓΙΑ LOGIN ---
+    // Σύνδεση
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('login-email').value;
@@ -46,12 +46,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (response.ok) {
-                // Αποθηκεύουμε τον χρήστη (είτε είναι student είτε admin)
+                // κρατάμε τον χρήστη τοπικά (student ή admin)
                 localStorage.setItem('user', JSON.stringify(result.user));
                 authMessage.style.color = 'var(--primary-color)';
                 authMessage.textContent = 'Επιτυχής σύνδεση! Μεταφορά...';
 
-                // Όλοι πάνε στο κεντρικό Hub!
                 setTimeout(() => window.location.href = 'index.html', 1000);
             } else {
                 authMessage.style.color = 'red';
@@ -63,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- ΛΕΙΤΟΥΡΓΙΑ REGISTER ---
+    // Εγγραφή
     if (registerForm) {
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -84,7 +83,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     authMessage.style.color = 'var(--primary-color)';
                     authMessage.textContent = 'Η εγγραφή ολοκληρώθηκε!';
 
-                    // Και οι νέοι χρήστες πάνε στο κεντρικό Hub!
                     setTimeout(() => window.location.href = 'index.html', 1000);
                 } else {
                     authMessage.style.color = 'red';

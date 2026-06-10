@@ -14,9 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // =============================================
-    //  TAB SWITCHING
-    // =============================================
+    // Εναλλαγή tabs
     const tabs = document.querySelectorAll('.admin-tab');
     const contents = document.querySelectorAll('.admin-tab-content');
     const loaded = {};
@@ -29,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const target = tab.dataset.tab;
             document.getElementById(target).classList.add('active');
 
-            // Lazy load data on first tab visit
+            // φόρτωση δεδομένων μόνο την πρώτη φορά που ανοίγει το tab
             if (!loaded[target]) {
                 loaded[target] = true;
                 if (target === 'tab-listings') loadListings();
@@ -38,12 +36,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Load stats immediately (default tab)
+    // τα στατιστικά είναι το default tab → φορτώνουν αμέσως
     loadAdminStats();
 
-    // =============================================
-    //  SEARCH HANDLERS
-    // =============================================
+    // Αναζήτηση στις αγγελίες
     document.getElementById('search-listings').addEventListener('input', (e) => {
         filterRows('admin-listings-container', e.target.value);
     });
@@ -59,9 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// =============================================
-//  ANIMATED COUNTER
-// =============================================
+// μετρητής που ανεβαίνει σταδιακά μέχρι τον στόχο
 function animateCounter(elementId, target) {
     const el = document.getElementById(elementId);
     if (!el) return;
@@ -79,9 +73,7 @@ function animateCounter(elementId, target) {
     requestAnimationFrame(step);
 }
 
-// =============================================
-//  TAB 1: ΣΤΑΤΙΣΤΙΚΑ
-// =============================================
+// Tab: Στατιστικά
 async function loadAdminStats() {
     try {
         const response = await fetch('/api/admin/stats');
@@ -153,9 +145,7 @@ function renderTopMealsStats(meals) {
 
 
 
-// =============================================
-//  TAB 3: ΑΓΓΕΛΙΕΣ
-// =============================================
+// Tab: Αγγελίες
 async function loadListings() {
     const container = document.getElementById('admin-listings-container');
     try {
@@ -189,7 +179,7 @@ async function loadListings() {
             const dateStr = new Date(listing.created_at).toLocaleDateString('el-GR');
             const pickupStr = new Date(listing.pickup_time).toLocaleString('el-GR', { dateStyle: 'short', timeStyle: 'short' });
 
-            // Allergens parsing
+            // αλλεργιογόνα — μπορεί να έρθουν ως JSON array ή σκέτο string
             let allergensHtml = '';
             if (listing.allergens) {
                 let parsed = listing.allergens;
@@ -241,7 +231,7 @@ window.adminDeleteListing = async function(listingId, title) {
         const response = await fetch(`/api/admin/listings/${listingId}`, { method: 'DELETE' });
         const result = await response.json();
         if (response.ok) {
-            // DOM update: αλλαγή status σε "Διαγραμμένη" χωρίς reload
+            // ενημερώνουμε το UI σε "Διαγραμμένη" χωρίς reload
             const row = document.querySelector(`[data-listing-id="${listingId}"]`);
             if (row) {
                 row.querySelector('.admin-row-badge').style.color = '#ef4444';
@@ -259,9 +249,7 @@ window.adminDeleteListing = async function(listingId, title) {
     }
 };
 
-// =============================================
-//  TAB 4: ΑΙΤΗΜΑΤΑ
-// =============================================
+// Tab: Αιτήματα
 async function loadRequests() {
     const container = document.getElementById('admin-requests-container');
     try {
@@ -323,9 +311,7 @@ async function loadRequests() {
     }
 }
 
-// =============================================
-//  UTILITY: Staggered Entrance Animation
-// =============================================
+// σταδιακή εμφάνιση στοιχείου (το ένα μετά το άλλο)
 function animateEntrance(el, index) {
     el.style.opacity = '0';
     el.style.transform = 'translateY(12px)';

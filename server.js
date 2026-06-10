@@ -1,22 +1,21 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const path = require('path'); // Το προσθέτουμε για σιγουριά στα μονοπάτια
+const path = require('path'); // για σταθερά paths όπου κι αν τρέχει ο server
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 
-// --- 1. Μεγαλώνουμε το όριο για τις φωτογραφίες ---
+// Μεγάλο όριο payload γιατί οι φωτογραφίες έρχονται ως base64
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// --- 2. ΕΠΙΤΡΕΠΟΥΜΕ ΣΤΟΝ BROWSER ΝΑ ΒΛΕΠΕΙ ΤΟΝ ΦΑΚΕΛΟ PUBLIC ---
-// Χρησιμοποιούμε το path.join για να είμαστε σίγουροι ότι βρίσκει τον φάκελο ανεξάρτητα από πού τρέχεις το terminal
+// Σερβίρουμε το frontend από τον φάκελο public
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Εισαγωγή των Routes
+// Routes
 const listingRoutes = require('./routes/listingRoutes');
 const authRoutes = require('./routes/authRoutes');
 const requestRoutes = require('./routes/requestRoutes');
@@ -24,7 +23,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const statsRoutes = require('./routes/statsRoutes');
 const { startPenaltyScheduler } = require('./penaltyScheduler');
 
-// Χρήση των Routes
+// Σύνδεση κάθε route group στο API path του
 app.use('/api/listings', listingRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/requests', requestRoutes);

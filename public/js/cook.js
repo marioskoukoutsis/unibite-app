@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Έλεγχος Σύνδεσης
+    // απαιτείται σύνδεση
     const storedUser = localStorage.getItem('user');
     if (!storedUser) {
         window.location.href = 'auth.html?redirect=cook.html';
@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const user = JSON.parse(storedUser);
 
-// --- Εμφάνιση Admin Portal στο Navigation αν είναι Admin ---
+// προσθήκη Admin Portal στο μενού αν είναι admin
     if (user.role === 'admin') {
         const navLinks = document.querySelector('.navbar-links');
         const adminLink = document.createElement('a');
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
         adminLink.textContent = 'Admin Portal';
         adminLink.style.cssText = 'color: var(--text-main); font-weight: 700;';
 
-        // Το τοποθετούμε πριν από τον "Λογαριασμό μου"
+        // μπαίνει πριν τον "Λογαριασμό μου"
         const accountLink = navLinks.querySelector('a[href="account.html"]');
         navLinks.insertBefore(adminLink, accountLink);
     }
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const messageDiv = document.getElementById('message');
     const listingsContainer = document.getElementById('my-listings-container');
 
-    // Εδώ θα αποθηκεύουμε προσωρινά τις αγγελίες για να τις διαβάζει η Επεξεργασία
+    // προσωρινό cache των αγγελιών — το διαβάζει η Επεξεργασία
     let currentListings = [];
 
     let cookMap = null;
@@ -35,10 +35,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function cleanCityName(cityName) {
         if (!cityName) return '';
         
-        // Normalize string to remove accents and convert to lowercase for prefix matching
+        // χωρίς τόνους & πεζά, για να ταιριάζουν τα prefixes
         const normalized = cityName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
         
-        // Prefix regex matching common Greek administrative divisions
+        // κόβει διοικητικά prefixes (Δήμος, Περιφέρεια, κ.λπ.)
         const prefixRegex = /^(δημος|δημοτικη ενοτητα|περιφερειακη ενοτητα|περιφερεια|δημοτικη κοινοτητα|τοπικη κοινοτητα|κοινοτητα)\s+/i;
         const match = normalized.match(prefixRegex);
         
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
             baseNormalized = normalized.slice(matchLength).trim();
         }
         
-        // Map common Greek city genitives/variations to their clean nominative name
+        // γενική/παραλλαγές πόλεων → καθαρή ονομαστική (π.χ. Πατρών → Πάτρα)
         const map = {
             'πατρεων': 'Πάτρα',
             'πατρων': 'Πάτρα',
@@ -79,16 +79,17 @@ document.addEventListener('DOMContentLoaded', () => {
         return map[baseNormalized] || baseOriginal;
     }
 
-    // Fetch address suggestions from Nominatim API (global search)
+    // προτάσεις διευθύνσεων από το Nominatim (μόνο Ελλάδα)
     async function fetchAddressSuggestions(query) {
         if (!query || query.trim().length < 3) return [];
 
-        // Extract street number from user query if present
+        // αν ο χρήστης έγραψε αριθμό, τον κρατάμε
         const queryNumberMatch = query.match(/\b\d+\b/);
         const queryNumber = queryNumberMatch ? queryNumberMatch[0] : '';
 
         try {
-            const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&addressdetails=1&q=${encodeURIComponent(query.trim())}`;
+            // countrycodes=gr → αποτελέσματα μόνο εντός Ελλάδας
+            const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&addressdetails=1&countrycodes=gr&q=${encodeURIComponent(query.trim())}`;
             const response = await fetch(url, {
                 headers: {
                     'Accept-Language': 'el,en',
@@ -184,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 300);
         });
 
-        // Hide suggestions when clicking outside
+        // κλείσιμο προτάσεων με κλικ έξω
         document.addEventListener('click', (e) => {
             if (!inputEl.contains(e.target) && !suggestionsEl.contains(e.target)) {
                 suggestionsEl.innerHTML = '';
@@ -243,12 +244,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function initCookMap(lat = 40.6401, lon = 22.9444, zoom = 13) {
+    function initCookMap(lat = 38.2466, lon = 21.7346, zoom = 13) {
         const mapContainer = document.getElementById('cook-map');
         if (!mapContainer) return;
 
         if (!cookMap) {
-            cookMap = L.map('cook-map').setView([lat, lon], zoom);
+            // όρια Ελλάδας [[νότος, δύση], [βορράς, ανατολή]] — κλειδώνουν τον χάρτη εντός χώρας
+            const greeceBounds = L.latLngBounds([34.7, 19.2], [41.9, 29.8]);
+            cookMap = L.map('cook-map', {
+                maxBounds: greeceBounds,
+                maxBoundsViscosity: 1.0,
+                minZoom: 6
+            }).setView([lat, lon], zoom);
             L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
                 attribution: '&copy; Google Maps'
             }).addTo(cookMap);
@@ -298,7 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cookMap.setView([lat, lon]);
     }
 
-    // --- ΠΕΡΙΟΡΙΣΜΟΣ ΗΜΕΡΟΜΗΝΙΑΣ (48 Ώρες) ---
+    // η ώρα παραλαβής δεν μπορεί να ξεπερνά τις 48 ώρες
     const timeInput = document.getElementById('time');
     const getLocalISOString = (date) => {
         const offset = date.getTimezoneOffset() * 60000;
@@ -381,12 +388,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // Try high accuracy (GPS/Wi-Fi positioning) first
+        // πρώτα υψηλή ακρίβεια (GPS/Wi-Fi)
         navigator.geolocation.getCurrentPosition(
             successCallback,
             (error) => {
                 console.warn('High accuracy geolocation failed/timed out. Trying IP fallback...', error);
-                // Fallback to low accuracy (IP positioning)
+                // αλλιώς χαμηλή ακρίβεια (εντοπισμός μέσω IP)
                 navigator.geolocation.getCurrentPosition(
                     successCallback,
                     async (error2) => {
@@ -396,10 +403,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             inputLocation.placeholder = originalPlaceholder;
                         }
                     },
-                    { enableHighAccuracy: false, timeout: 8000, maximumAge: Infinity }
+                    { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
                 );
             },
-            { enableHighAccuracy: true, timeout: 4000, maximumAge: 0 }
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         );
     }
 
@@ -408,196 +415,68 @@ document.addEventListener('DOMContentLoaded', () => {
         btnDetectGps.addEventListener('click', detectCookLocation);
     }
 
-    // --- MOBILE DETECTION & PHOTO UI ---
-    // Ανίχνευση κινητού: χρησιμοποιούμε pointer:coarse (touchscreen) + πλάτος οθόνης
-    // Αυτός ο συνδυασμός πιάνει κινητά/tablets αλλά ΟΧΙ desktops με touch screen
+    // Ανίχνευση κινητού & UI φωτογραφίας.
+    // pointer:coarse (touch) + μικρή οθόνη → πιάνει κινητά/tablets αλλά όχι touch desktops
     const isMobileDevice = (() => {
         const hasCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
         const isNarrowScreen = window.innerWidth <= 1024;
         const hasTouchPoints = navigator.maxTouchPoints > 0;
-        // Πρέπει να έχει touch ΚΑΙ μικρή οθόνη για να θεωρηθεί κινητό
+        // κινητό = touch ΚΑΙ μικρή οθόνη
         return (hasCoarsePointer || hasTouchPoints) && isNarrowScreen;
     })();
 
     const btnTakePhoto = document.getElementById('btn-take-photo');
     const btnPickGallery = document.getElementById('btn-pick-gallery');
     const galleryBtnText = document.getElementById('gallery-btn-text');
-    const photoInput = document.getElementById('photo');          // Gallery (χωρίς capture)
-    const photoCameraInput = document.getElementById('photo-camera'); // Camera (capture="environment")
+    const photoInput = document.getElementById('photo');          // από συλλογή
+    const photoCameraInput = document.getElementById('photo-camera'); // από κάμερα
     const photoPreviewContainer = document.getElementById('photo-preview-container');
     const photoPreviewImg = document.getElementById('photo-preview-img');
     const btnRemovePhoto = document.getElementById('btn-remove-photo');
 
-    // Μεταβλητή που κρατάει το τρέχον αρχείο (είτε από κάμερα είτε από gallery)
+    // η επιλεγμένη φωτογραφία (από κάμερα ή συλλογή)
     let selectedPhotoFile = null;
-    let isPhotoSafe = true; // Flag: η φωτογραφία πέρασε τον έλεγχο;
-
-    // --- NSFW DETECTION (Client-side, NSFWJS + TensorFlow.js) ---
-    // Το μοντέλο τρέχει 100% στον browser — καμία φωτογραφία δεν αποστέλλεται πουθενά.
-    let nsfwModel = null;
-    let nsfwModelLoading = false;
-
-    async function loadNsfwModel() {
-        if (nsfwModel) return nsfwModel;
-        if (nsfwModelLoading) {
-            // Περίμενε αν ήδη φορτώνει
-            while (nsfwModelLoading) {
-                await new Promise(r => setTimeout(r, 100));
-            }
-            return nsfwModel;
-        }
-
-        nsfwModelLoading = true;
-        try {
-            // Ελέγχουμε αν η βιβλιοθήκη φορτώθηκε
-            if (typeof nsfwjs === 'undefined') {
-                console.warn('NSFWJS library not loaded. Skipping content check.');
-                nsfwModelLoading = false;
-                return null;
-            }
-            nsfwModel = await nsfwjs.load();
-            console.log('✅ NSFW model loaded successfully');
-        } catch (e) {
-            console.error('Failed to load NSFW model:', e);
-            nsfwModel = null;
-        }
-        nsfwModelLoading = false;
-        return nsfwModel;
-    }
-
-    // Overlay elements
-    const nsfwOverlay = document.getElementById('nsfw-overlay');
-    const nsfwOverlayIcon = document.getElementById('nsfw-overlay-icon');
-    const nsfwOverlayText = document.getElementById('nsfw-overlay-text');
-
-    function showNsfwOverlay(state, icon, text) {
-        if (!nsfwOverlay) return;
-        nsfwOverlay.className = 'nsfw-overlay ' + state; // checking | safe | rejected
-        nsfwOverlayIcon.textContent = icon;
-        nsfwOverlayText.textContent = text;
-        nsfwOverlay.style.display = 'flex';
-    }
-
-    function hideNsfwOverlay() {
-        if (!nsfwOverlay) return;
-        nsfwOverlay.style.display = 'none';
-        nsfwOverlay.className = 'nsfw-overlay';
-    }
-
-    // Ελέγχει αν η εικόνα είναι ακατάλληλη.
-    // Κατώφλια: Porn > 0.20, Hentai > 0.20, Sexy > 0.45 → ΑΠΟΡΡΙΨΗ
-    async function checkPhotoNSFW(imgElement) {
-        const model = await loadNsfwModel();
-        if (!model) {
-            // Αν δεν φόρτωσε το μοντέλο, αφήνουμε τη φωτογραφία
-            console.warn('NSFW model unavailable — skipping check.');
-            return true; // safe by default
-        }
-
-        try {
-            const predictions = await model.classify(imgElement);
-            console.log('NSFW predictions:', predictions);
-
-            const getScore = (className) => {
-                const pred = predictions.find(p => p.className === className);
-                return pred ? pred.probability : 0;
-            };
-
-            const pornScore = getScore('Porn');
-            const hentaiScore = getScore('Hentai');
-            const sexyScore = getScore('Sexy');
-
-            if (pornScore > 0.20 || hentaiScore > 0.20 || sexyScore > 0.45) {
-                console.warn(`❌ NSFW detected — Porn: ${(pornScore*100).toFixed(1)}%, Hentai: ${(hentaiScore*100).toFixed(1)}%, Sexy: ${(sexyScore*100).toFixed(1)}%`);
-                return false; // NOT safe
-            }
-
-            return true; // safe
-        } catch (e) {
-            console.error('NSFW classification error:', e);
-            return true; // safe by default on error
-        }
-    }
 
     if (isMobileDevice) {
-        // --- ΚΙΝΗΤΟ: Εμφανίζουμε και τα δύο κουμπιά ---
+        // κινητό: και τα δύο κουμπιά (κάμερα + συλλογή)
         if (btnTakePhoto) btnTakePhoto.style.display = 'inline-flex';
         if (galleryBtnText) galleryBtnText.textContent = 'Επίλεξε από Συλλογή';
     } else {
-        // --- ΥΠΟΛΟΓΙΣΤΗΣ: Μόνο το gallery button (αρχεία) ---
+        // desktop: μόνο επιλογή αρχείου
         if (btnTakePhoto) btnTakePhoto.style.display = 'none';
         if (galleryBtnText) galleryBtnText.textContent = 'Επίλεξε από Αρχεία';
     }
 
-    // Κουμπί "Βγάλε Φωτογραφία" → ανοίγει camera input
+    // "Βγάλε Φωτογραφία" → άνοιγμα κάμερας
     if (btnTakePhoto) {
         btnTakePhoto.addEventListener('click', () => {
             photoCameraInput.click();
         });
     }
 
-    // Κουμπί "Επίλεξε από Συλλογή/Αρχεία" → ανοίγει gallery input
+    // "Επίλεξε από Συλλογή/Αρχεία" → άνοιγμα επιλογής αρχείου
     if (btnPickGallery) {
         btnPickGallery.addEventListener('click', () => {
             photoInput.click();
         });
     }
 
-    // Κοινή function: όταν επιλεγεί αρχείο, δείξε preview + τρέξε NSFW check
-    async function handlePhotoSelected(file) {
+    // όταν επιλεγεί αρχείο: κράτα το + δείξε preview
+    function handlePhotoSelected(file) {
         if (!file) return;
 
-        // Δείξε preview αμέσως
+        selectedPhotoFile = file;
+
+        // preview αμέσως
         const reader = new FileReader();
-        reader.onload = async (e) => {
+        reader.onload = (e) => {
             photoPreviewImg.src = e.target.result;
             photoPreviewContainer.style.display = 'block';
-
-            // Αρχίζει ο έλεγχος — δείξε overlay "Έλεγχος..."
-            isPhotoSafe = false;
-            showNsfwOverlay('checking', '🔍', 'Έλεγχος φωτογραφίας...');
-
-            // Περίμενε η εικόνα να φορτωθεί πλήρως πριν τη στείλεις στο μοντέλο
-            const tempImg = new Image();
-            tempImg.crossOrigin = 'anonymous';
-            tempImg.onload = async () => {
-                const safe = await checkPhotoNSFW(tempImg);
-
-                if (safe) {
-                    // ✅ Ασφαλής φωτογραφία
-                    selectedPhotoFile = file;
-                    isPhotoSafe = true;
-                    showNsfwOverlay('safe', '✅', 'Η φωτογραφία εγκρίθηκε!');
-                    // Κρύψε το overlay μετά από λίγο
-                    setTimeout(() => hideNsfwOverlay(), 1200);
-                } else {
-                    // ❌ Ακατάλληλο περιεχόμενο
-                    selectedPhotoFile = null;
-                    isPhotoSafe = true; // Reset flag αφού αφαιρέθηκε
-                    showNsfwOverlay('rejected', '🚫', 'Ακατάλληλο περιεχόμενο! Η φωτογραφία απορρίφθηκε.');
-
-                    // Καθαρισμός μετά από 2.5 δευτερόλεπτα
-                    setTimeout(() => {
-                        photoInput.value = '';
-                        photoCameraInput.value = '';
-                        photoPreviewContainer.style.display = 'none';
-                        photoPreviewImg.src = '';
-                        hideNsfwOverlay();
-                    }, 2500);
-                }
-            };
-            tempImg.onerror = () => {
-                // Αν αποτύχει το load, αφήνουμε τη φωτογραφία
-                selectedPhotoFile = file;
-                isPhotoSafe = true;
-                hideNsfwOverlay();
-            };
-            tempImg.src = e.target.result;
         };
         reader.readAsDataURL(file);
     }
 
-    // Ακούμε αλλαγές και στα δύο inputs
+    // ακούμε και τα δύο inputs
     photoInput.addEventListener('change', () => {
         if (photoInput.files.length > 0) {
             handlePhotoSelected(photoInput.files[0]);
@@ -610,22 +489,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Κουμπί αφαίρεσης φωτογραφίας
+    // αφαίρεση φωτογραφίας
     if (btnRemovePhoto) {
         btnRemovePhoto.addEventListener('click', () => {
             selectedPhotoFile = null;
-            isPhotoSafe = true;
             photoInput.value = '';
             photoCameraInput.value = '';
             photoPreviewContainer.style.display = 'none';
             photoPreviewImg.src = '';
-            hideNsfwOverlay();
         });
     }
 
-    // Συμπίεση & Resize φωτογραφίας πριν την αποστολή
-    // Οι φωτογραφίες κινητού είναι συχνά 5-15MB+ και σπάνε το όριο του server.
-    // Μειώνουμε σε max 1200px και JPEG quality 0.7 (~100-300KB τελικό μέγεθος).
+    // Συμπίεση/resize πριν το ανέβασμα.
+    // Οι φωτο κινητού φτάνουν 5-15MB+ και ξεπερνούν το όριο του server —
+    // τις φέρνουμε σε max 1200px / JPEG 0.7 (~100-300KB).
     const getBase64 = (file) => new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
@@ -637,7 +514,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 let width = img.width;
                 let height = img.height;
 
-                // Αν η εικόνα είναι μεγαλύτερη από 1200px, τη μικραίνουμε αναλογικά
+                // αναλογική σμίκρυνση αν ξεπερνά τα 1200px
                 if (width > MAX_DIM || height > MAX_DIM) {
                     if (width > height) {
                         height = Math.round(height * MAX_DIM / width);
@@ -654,7 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
 
-                // Εξαγωγή ως JPEG με quality 0.7 — δραματική μείωση μεγέθους
+                // export ως JPEG 0.7 — μεγάλη μείωση μεγέθους
                 const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
                 resolve(compressedBase64);
             };
@@ -663,18 +540,11 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     });
 
-    // --- ΥΠΟΒΟΛΗ ΦΟΡΜΑΣ (POST για Νέα, PUT για Επεξεργασία) ---
+    // υποβολή φόρμας: POST για νέα, PUT για επεξεργασία
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // Αν ο έλεγχος φωτογραφίας ακόμα τρέχει, μπλόκαρε
-        if (!isPhotoSafe) {
-            messageDiv.style.color = '#f59e0b';
-            messageDiv.textContent = 'Περίμενε... ο έλεγχος φωτογραφίας δεν έχει ολοκληρωθεί ακόμα.';
-            return;
-        }
-
-        const editId = document.getElementById('edit-listing-id').value; // Ελέγχουμε αν κάνουμε Edit
+        const editId = document.getElementById('edit-listing-id').value; // έχει τιμή μόνο σε επεξεργασία
 
         let photoBase64String = null;
         if (selectedPhotoFile) {
@@ -699,7 +569,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         try {
-            // Αν το editId έχει τιμή, κάνουμε PUT στο localhost:3000/api/listings/:id, αλλιώς POST
+            // editId → PUT /api/listings/:id, αλλιώς POST για νέα
             const url = editId ? `/api/listings/${editId}` : '/api/listings';
             const method = editId ? 'PUT' : 'POST';
 
@@ -714,8 +584,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 messageDiv.style.color = 'var(--primary-color)';
                 messageDiv.textContent = `Επιτυχία! ${result.message}`;
-                cancelEdit(); // Επαναφέρει τη φόρμα στο μηδέν
-                fetchMyListings(); // Ανανεώνει τη λίστα δυναμικά
+                cancelEdit(); // καθαρισμός φόρμας
+                fetchMyListings(); // ανανέωση λίστας
             } else {
                 messageDiv.style.color = 'red';
                 messageDiv.textContent = `Σφάλμα: ${result.error}`;
@@ -781,7 +651,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Η ΣΥΝΑΡΤΗΣΗ ΠΟΥ "ΓΕΜΙΖΕΙ" ΤΗ ΦΟΡΜΑ ΓΙΑ ΕΠΕΞΕΡΓΑΣΙΑ ---
+    // γεμίζει τη φόρμα με τα στοιχεία μιας αγγελίας για επεξεργασία
     window.editListing = function(id) {
         const listing = currentListings.find(l => l.id === id);
         if (!listing) return;
@@ -806,23 +676,23 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('allergens').value = allergensStr;
         document.getElementById('notes').value = listing.notes || '';
 
-        // Αλλαγή UI
+        // περνάμε σε λειτουργία επεξεργασίας
         document.getElementById('form-title').textContent = 'Επεξεργασία Αγγελίας';
         document.getElementById('submit-btn').textContent = 'Αποθήκευση Αλλαγών';
         document.getElementById('cancel-edit-btn').style.display = 'inline-block';
 
-        // Update map pin
+        // ενημέρωση pin στον χάρτη
         if (listing.latitude !== null && listing.longitude !== null) {
             initCookMap(parseFloat(listing.latitude), parseFloat(listing.longitude), 16);
         } else {
-            initCookMap(40.6401, 22.9444, 13);
+            initCookMap(38.2466, 21.7346, 13);
         }
 
-        // Ανεβαίνουμε στην κορυφή της σελίδας για να δει τη φόρμα
+        // scroll πάνω για να φανεί η φόρμα
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    // --- ΑΚΥΡΩΣΗ ΕΠΕΞΕΡΓΑΣΙΑΣ ΚΑΙ ΕΠΙΣΤΡΟΦΗ ---
+    // ακύρωση επεξεργασίας — επαναφορά φόρμας σε "νέα αγγελία"
     window.cancelEdit = function() {
         form.reset();
         document.getElementById('edit-listing-id').value = '';
@@ -833,17 +703,15 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('cancel-edit-btn').style.display = 'none';
         messageDiv.textContent = '';
 
-        // Καθαρισμός φωτογραφίας
+        // καθάρισμα φωτογραφίας
         selectedPhotoFile = null;
-        isPhotoSafe = true;
         photoInput.value = '';
         photoCameraInput.value = '';
         photoPreviewContainer.style.display = 'none';
         photoPreviewImg.src = '';
-        hideNsfwOverlay();
 
         if (cookMap) {
-            initCookMap(40.6401, 22.9444, 13);
+            initCookMap(38.2466, 21.7346, 13);
         }
     };
 
@@ -988,7 +856,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isConfirmed) return;
         try {
             const response = await fetch(`/api/listings/${id}`, { method: 'DELETE' });
-            if (response.ok) fetchMyListings(); // Δεν κάνουμε reload, απλά ανανεώνουμε τη λίστα
+            if (response.ok) fetchMyListings(); // ανανέωση λίστας χωρίς reload
             else alert('Σφάλμα κατά τη διαγραφή');
         } catch (error) { alert('Πρόβλημα σύνδεσης.'); }
     };

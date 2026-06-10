@@ -1,15 +1,16 @@
 const pool = require('../config/db');
 
+// Δεδομένα για τη σελίδα στατιστικών/leaderboard
 exports.getLeaderboard = async (req, res) => {
     try {
-        // 1. Συνολικές μερίδες που διαμοιράστηκαν (all-time)
+        // σύνολο μερίδων που παραλήφθηκαν (όλων των εποχών)
         const [[portionsResult]] = await pool.query(`
-            SELECT COUNT(*) AS total_portions 
-            FROM requests 
+            SELECT COUNT(*) AS total_portions
+            FROM requests
             WHERE status = 'picked_up'
         `);
 
-        // 2. Συνολικοί ενεργοί μάγειρες
+        // πόσοι διαφορετικοί μάγειρες έχουν προσφέρει
         const [[cooksResult]] = await pool.query(`
             SELECT COUNT(DISTINCT l.cook_id) AS total_cooks
             FROM listings l
@@ -17,7 +18,7 @@ exports.getLeaderboard = async (req, res) => {
             WHERE r.status = 'picked_up'
         `);
 
-        // 3. Top 10 Μάγειρες (περισσότερες επιτυχημένες μερίδες)
+        // top 10 μάγειρες με τις περισσότερες μερίδες
         const [topCooks] = await pool.query(`
             SELECT u.name, COUNT(r.id) AS portions_given,
                    ROUND(AVG(CASE WHEN r.rating > 0 THEN r.rating ELSE NULL END), 1) AS avg_rating
@@ -30,7 +31,7 @@ exports.getLeaderboard = async (req, res) => {
             LIMIT 10
         `);
 
-        // 4. Top 5 Γεύματα (υψηλότερη μέση βαθμολογία, τουλάχιστον 1 rating)
+        // top 5 γεύματα με την καλύτερη μέση βαθμολογία
         const [topMeals] = await pool.query(`
             SELECT l.title, u.name AS cook_name,
                    ROUND(AVG(r.rating), 1) AS avg_rating,
@@ -44,7 +45,7 @@ exports.getLeaderboard = async (req, res) => {
             LIMIT 5
         `);
 
-        // 5. Στατιστικά τελευταίου μήνα
+        // μερίδες του τελευταίου μήνα
         const [[monthResult]] = await pool.query(`
             SELECT COUNT(*) AS monthly_portions
             FROM requests

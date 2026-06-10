@@ -1,10 +1,9 @@
 /**
- * global.js — Κοινές λειτουργίες για όλες τις σελίδες της εφαρμογής.
- * Φορτώνεται πριν από κάθε άλλο script.
+ * global.js — κοινά κομμάτια για όλες τις σελίδες. Φορτώνεται πρώτο.
  */
 document.addEventListener('DOMContentLoaded', () => {
 
-    // ─── 1. Sticky Navbar Shadow on Scroll ───
+    // σκιά στο navbar μόλις αρχίσει το scroll
     const navbar = document.querySelector('.navbar');
     if (navbar) {
         window.addEventListener('scroll', () => {
@@ -12,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, { passive: true });
     }
 
-    // ─── 2. Scroll-to-Top Button ───
+    // κουμπί "πάνω-πάνω" που εμφανίζεται μετά από λίγο scroll
     const btn = document.createElement('button');
     btn.className = 'scroll-to-top';
     btn.setAttribute('aria-label', 'Επιστροφή στην κορυφή');

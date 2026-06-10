@@ -1,21 +1,14 @@
 const pool = require('./config/db');
 
 /**
- * 48-Hour No-Rating Penalty
- * 
- * Αυτόματος έλεγχος: Αν ένας consumer παρέλαβε φαγητό (picked_up)
- * αλλά ΔΕΝ έβαλε αξιολόγηση μέσα σε 48 ώρες, χάνει 1 credit.
- * 
- * Για να μην τιμωρηθεί ο χρήστης πολλαπλά, θέτουμε rating = -1
- * (sentinel value) ώστε να μη ξαναελεγχθεί.
+ * Penalty για μη-αξιολόγηση εντός 48 ωρών.
+ * Όποιος παρέλαβε φαγητό αλλά δεν βαθμολόγησε μέσα σε 48 ώρες χάνει 1 credit.
+ * Βάζουμε rating = -1 (sentinel) ώστε το ίδιο request να μην ξαναχρεωθεί.
  */
 
 async function checkNoRatingPenalties() {
     try {
-        // Βρες όλα τα requests που:
-        // 1. Έχουν status 'picked_up'
-        // 2. Δεν έχουν rating (NULL)
-        // 3. Η παραλαβή (pickup_time) ήταν πριν 48+ ώρες
+        // Παραλαβές 48+ ωρών που έμειναν χωρίς βαθμολογία
         const [expiredRequests] = await pool.query(`
             SELECT r.id, r.consumer_id, l.title
             FROM requests r
@@ -26,19 +19,19 @@ async function checkNoRatingPenalties() {
         `);
 
         if (expiredRequests.length === 0) {
-            return; // Τίποτα προς επεξεργασία
+            return; // δεν εκκρεμεί τίποτα
         }
 
         console.log(`⏰ Βρέθηκαν ${expiredRequests.length} αιτήματα χωρίς αξιολόγηση (48h+). Εφαρμογή penalty...`);
 
         for (const req of expiredRequests) {
-            // 1. Αφαίρεση 1 credit από τον consumer
+            // -1 credit στον consumer
             await pool.query(
                 'UPDATE users SET credits = GREATEST(credits - 1, 0) WHERE id = ?',
                 [req.consumer_id]
             );
 
-            // 2. Σημείωση: βάζουμε rating = -1 (sentinel) ώστε να μη ξαναεπεξεργαστεί
+            // μαρκάρουμε ως ελεγμένο για να μην ξαναχρεωθεί
             await pool.query(
                 'UPDATE requests SET rating = -1 WHERE id = ?',
                 [req.id]
@@ -55,16 +48,14 @@ async function checkNoRatingPenalties() {
 }
 
 /**
- * Εκκίνηση του scheduler.
- * Τρέχει κάθε 1 ώρα (3600000 ms).
+ * Ξεκινά τον scheduler: πρώτος έλεγχος λίγο μετά το boot, μετά κάθε ώρα.
  */
 function startPenaltyScheduler() {
     console.log('🕐 No-Rating Penalty Scheduler ξεκίνησε (κάθε 1 ώρα)');
-    
-    // Πρώτος έλεγχος μετά από 10 δευτερόλεπτα (αφού ξεκινήσει ο server)
+
+    // μικρή καθυστέρηση ώστε να έχει σηκωθεί ο server
     setTimeout(checkNoRatingPenalties, 10000);
-    
-    // Μετά, κάθε 1 ώρα
+
     setInterval(checkNoRatingPenalties, 60 * 60 * 1000);
 }
 

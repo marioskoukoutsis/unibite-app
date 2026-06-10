@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 
+// Νέο αίτημα δέσμευσης μερίδας από καταναλωτή
 exports.createRequest = async (req, res) => {
     try {
         const { listing_id, consumer_id } = req.body;
@@ -37,6 +38,7 @@ exports.createRequest = async (req, res) => {
     }
 };
 
+// Αλλαγή κατάστασης αιτήματος (approve/reject/picked_up/no_show) + credits & μερίδες
 exports.updateRequestStatus = async (req, res) => {
     try {
         const requestId = req.params.id;
@@ -63,7 +65,9 @@ exports.updateRequestStatus = async (req, res) => {
         await pool.query('UPDATE requests SET status = ? WHERE id = ?', [status, requestId]);
 
         if (status === 'picked_up') {
+            // μεταφορά πόντου: +1 στον μάγειρα, -1 στον καταναλωτή
             await pool.query('UPDATE users SET credits = credits + 1 WHERE id = ?', [request.cook_id]);
+            await pool.query('UPDATE users SET credits = GREATEST(credits - 1, 0) WHERE id = ?', [request.consumer_id]);
         }
 
         if (status === 'approved') {
@@ -72,9 +76,19 @@ exports.updateRequestStatus = async (req, res) => {
                 return res.status(400).json({ error: 'Δεν υπάρχουν πλέον διαθέσιμες μερίδες.' });
             }
             await pool.query('UPDATE listings SET available_portions = available_portions - 1 WHERE id = ?', [request.listing_id]);
+
+            // μηδένισαν οι μερίδες → αυτόματη απόρριψη των υπόλοιπων εκκρεμών
+            const remainingPortions = listing[0].available_portions - 1;
+            if (remainingPortions <= 0) {
+                await pool.query(
+                    `UPDATE requests SET status = 'rejected' WHERE listing_id = ? AND status = 'pending' AND id != ?`,
+                    [request.listing_id, requestId]
+                );
+            }
         }
 
         if (status === 'no_show') {
+            // penalty στον καταναλωτή και επιστροφή της μερίδας στο απόθεμα
             await pool.query('UPDATE users SET credits = credits - 1 WHERE id = ?', [request.consumer_id]);
             await pool.query('UPDATE listings SET available_portions = available_portions + 1 WHERE id = ?', [request.listing_id]);
         }
@@ -86,6 +100,7 @@ exports.updateRequestStatus = async (req, res) => {
     }
 };
 
+// Αιτήματα ανά μάγειρα ή ανά καταναλωτή (ανάλογα το query param)
 exports.getRequestsForCook = async (req, res) => {
     try {
         const cook_id = req.query.cook_id;
@@ -130,6 +145,7 @@ exports.getRequestsForCook = async (req, res) => {
     }
 };
 
+// Βαθμολόγηση μερίδας μετά την παραλαβή (+1 πόντος στον μάγειρα αν rating >= 4)
 exports.rateRequest = async (req, res) => {
     try {
         const requestId = req.params.id;

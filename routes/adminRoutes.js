@@ -2,15 +2,14 @@ const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
 
-// Στατιστικά (υπάρχον)
+// Συνολικά στατιστικά για το dashboard
 router.get('/stats', adminController.getStats);
 
-
-// Αγγελίες
+// Διαχείριση αγγελιών
 router.get('/listings', adminController.getAllListings);
 router.delete('/listings/:id', adminController.deleteListing);
 
-// Αιτήματα
+// Πρόσφατα αιτήματα
 router.get('/requests', adminController.getRecentRequests);
 
 module.exports = router;

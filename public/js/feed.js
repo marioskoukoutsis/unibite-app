@@ -1,13 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
     const user = JSON.parse(localStorage.getItem('user'));
     
-    // Αν δεν είναι συνδεδεμένος, στείλτον στο login
+    // χωρίς σύνδεση → login
     if (!user) {
         window.location.href = 'auth.html';
         return;
     }
 
-    // --- Εμφάνιση Admin Portal στο Navigation αν είναι Admin ---
+    // προσθήκη Admin Portal στο μενού αν είναι admin
     if (user.role === 'admin') {
         const navLinks = document.querySelector('.navbar-links');
         if (navLinks) {
@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fetchAndDisplayCredits();
 
-    // --- Global State for Map and Filtering ---
+    // κοινό state για χάρτη & φιλτράρισμα
     let allListings = [];
     let userLocation = null;
     let geocodeCache = JSON.parse(localStorage.getItem('unibite_geocode_cache') || '{}');
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let userMarker = null;
     let currentView = 'list';
 
-    // Helper to escape HTML and prevent injection
+    // escape HTML για αποφυγή injection
     function escapeHTML(str) {
         if (!str) return '';
         return str.replace(/[&<>'"]/g, 
@@ -63,9 +63,9 @@ document.addEventListener('DOMContentLoaded', () => {
         );
     }
 
-    // Haversine formula to calculate distance in km
+    // απόσταση δύο σημείων σε χλμ (τύπος Haversine)
     function calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371; // Earth's radius in km
+        const R = 6371; // ακτίνα Γης σε χλμ
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLon = (lon2 - lon1) * Math.PI / 180;
         const a = 
@@ -79,10 +79,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function cleanCityName(cityName) {
         if (!cityName) return '';
         
-        // Normalize string to remove accents and convert to lowercase for prefix matching
+        // χωρίς τόνους & πεζά, για να ταιριάζουν τα prefixes
         const normalized = cityName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
         
-        // Prefix regex matching common Greek administrative divisions
+        // κόβει διοικητικά prefixes (Δήμος, Περιφέρεια, κ.λπ.)
         const prefixRegex = /^(δημος|δημοτικη ενοτητα|περιφερειακη ενοτητα|περιφερεια|δημοτικη κοινοτητα|τοπικη κοινοτητα|κοινοτητα)\s+/i;
         const match = normalized.match(prefixRegex);
         
@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
             baseNormalized = normalized.slice(matchLength).trim();
         }
         
-        // Map common Greek city genitives/variations to their clean nominative name
+        // γενική/παραλλαγές πόλεων → καθαρή ονομαστική (π.χ. Πατρών → Πάτρα)
         const map = {
             'πατρεων': 'Πάτρα',
             'πατρων': 'Πάτρα',
@@ -123,16 +123,17 @@ document.addEventListener('DOMContentLoaded', () => {
         return map[baseNormalized] || baseOriginal;
     }
 
-    // Fetch address suggestions from Nominatim API (global search)
+    // προτάσεις διευθύνσεων από το Nominatim (μόνο Ελλάδα)
     async function fetchAddressSuggestions(query) {
         if (!query || query.trim().length < 3) return [];
-        
-        // Extract street number from user query if present
+
+        // αν ο χρήστης έγραψε αριθμό, τον κρατάμε
         const queryNumberMatch = query.match(/\b\d+\b/);
         const queryNumber = queryNumberMatch ? queryNumberMatch[0] : '';
 
         try {
-            const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&addressdetails=1&q=${encodeURIComponent(query.trim())}`;
+            // countrycodes=gr → αποτελέσματα μόνο εντός Ελλάδας
+            const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&addressdetails=1&countrycodes=gr&q=${encodeURIComponent(query.trim())}`;
             const response = await fetch(url, {
                 headers: {
                     'Accept-Language': 'el,en',
@@ -228,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 300);
         });
 
-        // Hide suggestions when clicking outside
+        // κλείσιμο προτάσεων με κλικ έξω
         document.addEventListener('click', (e) => {
             if (!inputEl.contains(e.target) && !suggestionsEl.contains(e.target)) {
                 suggestionsEl.innerHTML = '';
@@ -237,7 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Geocode an address string via free Nominatim API with cache
+    // διεύθυνση → συντεταγμένες, με cache για λιγότερα requests
     async function geocodeAddress(address) {
         if (!address) return null;
         const cleanAddress = address.trim();
@@ -245,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return geocodeCache[cleanAddress];
         }
         try {
-            const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(cleanAddress)}`;
+            const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=gr&q=${encodeURIComponent(cleanAddress)}`;
             const response = await fetch(url, {
                 headers: {
                     'Accept-Language': 'el,en',
@@ -269,7 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return null;
     }
 
-    // Geocode all listing locations sequentially with a rate limit delay
+    // geocode όλων των αγγελιών μία-μία (με delay για το rate limit)
     async function geocodeAllListingsAndRefresh(listings) {
         const locations = [...new Set(
             listings
@@ -284,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (coords) {
                     hasNewGeocodes = true;
                 }
-                // Pause for 1 second to respect OSM Nominatim rate limits (max 1 req/sec)
+                // 1 δευτ. παύση — το Nominatim θέλει max 1 request/sec
                 await new Promise(resolve => setTimeout(resolve, 1000));
             }
         }
@@ -294,16 +295,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Initialize Leaflet Map
+    // αρχικοποίηση του χάρτη Leaflet
     function initMap() {
         const mapContainer = document.getElementById('map');
         if (!mapContainer || map) return;
 
-        // Default center on Thessaloniki: 40.6401, 22.9444
-        const center = userLocation ? [userLocation.lat, userLocation.lon] : [40.6401, 22.9444];
-        map = L.map('map').setView(center, 13);
+        // default κέντρο: Πάτρα
+        const center = userLocation ? [userLocation.lat, userLocation.lon] : [38.2466, 21.7346];
 
-        // Google Maps styled roadmap tiles!
+        // όρια Ελλάδας [[νότος, δύση], [βορράς, ανατολή]] — κλειδώνουν τον χάρτη εντός χώρας
+        const greeceBounds = L.latLngBounds([34.7, 19.2], [41.9, 29.8]);
+        map = L.map('map', {
+            maxBounds: greeceBounds,
+            maxBoundsViscosity: 1.0,
+            minZoom: 6
+        }).setView(center, 13);
+
+        // tiles σε στυλ Google Maps
         L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
             attribution: '&copy; Google Maps'
         }).addTo(map);
@@ -311,7 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
         markersGroup = L.layerGroup().addTo(map);
     }
 
-    // Update markers on Leaflet map
+    // ανανέωση των markers στον χάρτη
     function updateMapMarkers(listings) {
         if (!map) return;
         if (!markersGroup) {
@@ -321,7 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
         markersGroup.clearLayers();
         window.listingMarkers = {};
 
-        // User location marker (Google Maps style blue pin)
+        // μπλε pin για τη θέση του χρήστη
         if (userLocation) {
             if (userMarker) {
                 map.removeLayer(userMarker);
@@ -370,7 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (lat !== null && lon !== null) {
                 const isSoldOut = item.available_portions === 0;
-                // Google Maps style red/terracotta pin or gray if sold out
+                // κόκκινο pin, ή γκρι αν εξαντλήθηκαν οι μερίδες
                 const pinColor = isSoldOut ? '#9ca3af' : '#e05d3a';
                 
                 const pinIconHtml = `
@@ -410,13 +418,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Fit map bounds to show all markers nicely
+        // ζουμ ώστε να φαίνονται όλοι οι markers
         if (bounds.length > 0 && map) {
             map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
         }
     }
 
-    // Process Listings, calculate distances, apply sorting & distance filter
+    // υπολογισμός αποστάσεων, ταξινόμηση & φιλτράρισμα των αγγελιών
     async function processAndRenderFeed() {
         const listingsWithDistance = allListings.map(item => {
             let distance = null;
@@ -438,10 +446,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return { ...item, distance };
         });
 
-        // Filter out own user listings
+        // κρύβουμε τις δικές μας αγγελίες
         let filteredListings = listingsWithDistance.filter(item => item.cook_id !== user.id);
 
-        // Filter by max distance slider
+        // φίλτρο μέγιστης απόστασης (slider)
         const maxDistance = parseFloat(document.getElementById('distance-range')?.value || 25);
         if (userLocation && maxDistance < 25) {
             filteredListings = filteredListings.filter(item => {
@@ -449,7 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Sort by distance if userLocation exists
+        // ταξινόμηση κατά απόσταση όταν ξέρουμε τη θέση του χρήστη
         if (userLocation) {
             filteredListings.sort((a, b) => {
                 if (a.distance === null) return 1;
@@ -458,23 +466,23 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Render listings cards
+        // εμφάνιση καρτών
         renderFeed(filteredListings);
 
-        // Update Leaflet pins
+        // ανανέωση pins στον χάρτη
         updateMapMarkers(filteredListings);
     }
 
-    // 1. Λήψη των αγγελιών από το Backend
+    // φέρνουμε τις αγγελίες από το backend
     async function fetchListings() {
         try {
             const response = await fetch('/api/listings');
             allListings = await response.json();
             
-            // Background geocode
+            // geocode στο παρασκήνιο
             geocodeAllListingsAndRefresh(allListings);
             
-            // Initial render
+            // πρώτο render
             await processAndRenderFeed();
         } catch (error) {
             console.error('Σφάλμα fetch:', error);
@@ -482,7 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 2. Εμφάνιση των αγγελιών στην HTML
+    // φτιάχνει το HTML των καρτών αγγελιών
     function renderFeed(listings) {
         feedContainer.innerHTML = ''; 
 
@@ -497,7 +505,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const card = document.createElement('div');
             card.className = `card ${isSoldOut ? 'sold-out' : ''}`;
             
-            // Allergens HTML
+            // ετικέτες αλλεργιογόνων
             let allergensHTML = '';
             if (item.allergens) {
                 let parsed = item.allergens;
@@ -515,7 +523,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Distance badge HTML
+            // badge απόστασης
             let distanceBadgeHTML = '';
             if (item.distance !== null) {
                 distanceBadgeHTML = `
@@ -593,7 +601,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Geocoding user address input handler
+    // χειρισμός του πεδίου διεύθυνσης του χρήστη
     async function handleGeocodeUserAddress() {
         const addressInput = document.getElementById('user-address');
         if (!addressInput) return;
@@ -623,7 +631,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 await processAndRenderFeed();
             } else {
-                alert('Δεν μπορέσαμε να εντοπίσουμε αυτή τη διεύθυνση. Δοκιμάστε ξανά με πιο απλούς όρους (π.χ. Θεσσαλονίκη).');
+                alert('Δεν μπορέσαμε να εντοπίσουμε αυτή τη διεύθυνση. Δοκιμάστε ξανά με πιο απλούς όρους (π.χ. Πάτρα).');
             }
         } catch (e) {
             console.error(e);
@@ -634,7 +642,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // DOM wire up
+    // σύνδεση των στοιχείων του DOM
     const btnGeocode = document.getElementById('btn-geocode');
     const inputAddress = document.getElementById('user-address');
     const sliderDistance = document.getElementById('distance-range');
@@ -706,7 +714,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Load stored values
+    // φόρτωση αποθηκευμένης διεύθυνσης/θέσης
     const storedAddress = localStorage.getItem('unibite_user_address');
     const storedCoords = localStorage.getItem('unibite_user_coords');
 
@@ -752,11 +760,11 @@ async function fetchMyOrders() {
                 
                 const pickupDate = new Date(order.pickup_time).toLocaleString('el-GR', { dateStyle: 'short', timeStyle: 'short' });
 
-                // --- Premium Rating Section ---
+                // ενότητα αξιολόγησης
                 let ratingSection = '';
                 if (order.status === 'picked_up') {
                     if (order.rating && Number(order.rating) === -1) {
-                        // Penalty: δεν αξιολόγησε εντός 48 ωρών
+                        // penalty: δεν αξιολόγησε μέσα σε 48 ώρες
                         ratingSection = `
                             <div class="rating-display" style="background: linear-gradient(135deg, #fef2f2, #fee2e2); border-color: #fca5a5;">
                                 <span class="stars-show">⏰</span>
@@ -764,7 +772,7 @@ async function fetchMyOrders() {
                             </div>
                         `;
                     } else if (order.rating && Number(order.rating) > 0) {
-                        // Ήδη αξιολογημένο — δείχνουμε visual stars
+                        // ήδη βαθμολογημένο — μόνο εμφάνιση αστεριών
                         const ratingNum = Number(order.rating);
                         const starsVisual = '★'.repeat(ratingNum) + '☆'.repeat(5 - ratingNum);
                         const ratingLabels = { 1: 'Κακό', 2: 'Μέτριο', 3: 'Καλό', 4: 'Πολύ Καλό', 5: 'Εξαιρετικό' };
@@ -775,7 +783,7 @@ async function fetchMyOrders() {
                             </div>
                         `;
                     } else {
-                        // Δεν έχει αξιολογηθεί ακόμα — interactive star picker
+                        // δεν έχει βαθμολογηθεί — διαδραστικά αστέρια
                         ratingSection = `
                             <div class="rating-container">
                                 <p class="rating-title">✨ Πώς ήταν το γεύμα;</p>
@@ -808,7 +816,7 @@ async function fetchMyOrders() {
             ordersContainer.appendChild(card);
         });
 
-        // Αφού μπουν οι κάρτες στο DOM, ενεργοποιούμε τα interactive stars
+        // αφού μπουν οι κάρτες στο DOM, ενεργοποιούμε τα αστέρια
         initStarPickers();
 
     } catch (error) {
@@ -937,12 +945,12 @@ async function fetchMyOrders() {
             }
         };
 
-        // Try high accuracy (GPS/Wi-Fi positioning) first
+        // πρώτα υψηλή ακρίβεια (GPS/Wi-Fi)
         navigator.geolocation.getCurrentPosition(
             successCallback,
             (error) => {
                 console.warn('High accuracy geolocation failed/timed out. Trying IP fallback...', error);
-                // Fallback to low accuracy (IP positioning)
+                // αλλιώς χαμηλή ακρίβεια (εντοπισμός μέσω IP)
                 navigator.geolocation.getCurrentPosition(
                     successCallback,
                     async (error2) => {
@@ -952,10 +960,10 @@ async function fetchMyOrders() {
                             inputAddress.placeholder = originalPlaceholder;
                         }
                     },
-                    { enableHighAccuracy: false, timeout: 8000, maximumAge: Infinity }
+                    { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
                 );
             },
-            { enableHighAccuracy: true, timeout: 4000, maximumAge: 0 }
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         );
     }
 
@@ -963,16 +971,23 @@ async function fetchMyOrders() {
     fetchMyOrders();
     initMap();
 
+    // εκθέτουμε το refresh των αιτημάτων ώστε να το καλούν οι global handlers (χωρίς reload)
+    window.refreshMyOrders = fetchMyOrders;
+
     const btnDetectGps = document.getElementById('btn-detect-gps');
     if (btnDetectGps) {
         btnDetectGps.addEventListener('click', detectUserLocation);
     }
 
-    // Automatically detect location on load for customers (consumers)
-    detectUserLocation();
+    // Αυτόματος εντοπισμός μόνο αν ΔΕΝ υπάρχει ήδη αποθηκευμένη τοποθεσία.
+    // Έτσι μια χειροκίνητα ορισμένη διεύθυνση δεν αντικαθίσταται σε κάθε reload
+    // (σημαντικό σε υπολογιστές χωρίς GPS, όπου ο εντοπισμός είναι ανακριβής).
+    if (!userLocation) {
+        detectUserLocation();
+    }
 });
 
-// --- Rating Labels Configuration ---
+// ετικέτες/περιγραφές ανά βαθμολογία
 const RATING_LEVELS = {
     1: { title: 'Κακό 😞',         desc: 'Δεν ήταν αυτό που περίμενα. Υπάρχουν πολλά περιθώρια βελτίωσης.' },
     2: { title: 'Μέτριο 😐',       desc: 'Εντάξει, αλλά χρειάζεται βελτίωση σε γεύση ή ποσότητα.' },
@@ -981,7 +996,7 @@ const RATING_LEVELS = {
     5: { title: 'Εξαιρετικό 🤩',   desc: 'Σπιτικό αριστούργημα! Γεύση, παρουσίαση, τα πάντα τέλεια.' }
 };
 
-// --- Star Picker Initialization ---
+// ενεργοποίηση των διαδραστικών αστεριών
 function initStarPickers() {
     document.querySelectorAll('.star-picker').forEach(picker => {
         const orderId = picker.id.replace('star-picker-', '');
@@ -993,7 +1008,7 @@ function initStarPickers() {
         stars.forEach(star => {
             const val = Number(star.dataset.value);
 
-            // Hover: φωτίζουμε όλα τα αστέρια μέχρι αυτό + δείχνουμε label
+            // hover: φωτίζουμε μέχρι το τρέχον αστέρι + label
             star.addEventListener('mouseenter', () => {
                 stars.forEach(s => {
                     s.classList.toggle('hovered', Number(s.dataset.value) <= val);
@@ -1006,17 +1021,17 @@ function initStarPickers() {
                 `;
             });
 
-            // Click: κλειδώνουμε την επιλογή
+            // click: κλειδώνουμε την επιλογή
             star.addEventListener('click', () => {
                 hiddenInput.value = val;
                 submitBtn.disabled = false;
                 stars.forEach(s => {
                     const sv = Number(s.dataset.value);
                     s.classList.toggle('selected', sv <= val);
-                    // Pulse animation
+                    // μικρό pulse εφέ
                     if (sv <= val) {
                         s.classList.remove('pulse');
-                        void s.offsetWidth; // force reflow
+                        void s.offsetWidth; // force reflow για να ξαναπαίξει το animation
                         s.classList.add('pulse');
                     }
                 });
@@ -1029,7 +1044,7 @@ function initStarPickers() {
             });
         });
 
-        // Mouse leave: επιστρέφουμε στο selected state
+        // mouse leave: επιστροφή στην επιλεγμένη τιμή
         picker.addEventListener('mouseleave', () => {
             const currentVal = Number(hiddenInput.value);
             stars.forEach(s => {
@@ -1050,11 +1065,11 @@ function initStarPickers() {
     });
 }
 
-// 3. Λειτουργία Κουμπιού "Θέλω Μερίδα"
+// κουμπί "Θέλω Μερίδα" — αποστολή αιτήματος
 window.requestPortion = async function(listingId) {
     const user = JSON.parse(localStorage.getItem('user'));
 
-    // Έλεγχος πόντων (Απαίτηση Γ2)
+    // χρειάζεται τουλάχιστον 1 πόντο (Γ2)
     if (user.credits < 1) {
         alert("Δεν έχεις αρκετούς πόντους! Πρέπει να μαγειρέψεις για να κερδίσεις πόντους.");
         return;
@@ -1073,7 +1088,8 @@ window.requestPortion = async function(listingId) {
         const data = await response.json();
         if (response.ok) {
             alert("Το αίτημα στάλθηκε! Περίμενε έγκριση από τον μάγειρα.");
-            location.reload(); // Ανανέωση για να φανεί η αλλαγή στις μερίδες
+            // ανανέωση της λίστας αιτημάτων χωρίς reload (το νέο αίτημα εμφανίζεται αμέσως)
+            if (window.refreshMyOrders) window.refreshMyOrders();
         } else {
             alert(data.error || "Κάτι πήγε στραβά.");
         }
@@ -1105,7 +1121,8 @@ window.submitRating = async function(orderId) {
         const result = await response.json();
         if (response.ok) {
             alert('Η βαθμολογία σου καταχωρήθηκε! Ευχαριστούμε για την αξιολόγηση. 🙏');
-            location.reload();
+            // ανανέωση των αιτημάτων χωρίς reload (εμφανίζεται αμέσως η βαθμολογία)
+            if (window.refreshMyOrders) window.refreshMyOrders();
         } else {
             btn.disabled = false;
             btn.textContent = 'Αποστολή Αξιολόγησης';

@@ -1,11 +1,11 @@
-const pool = require('../config/db'); // Φέρνουμε τη σύνδεση με τη βάση
+const pool = require('../config/db');
 const fs = require('fs');
 const path = require('path');
 
-// Η συνάρτηση για το GET
+// GET — ενεργές αγγελίες
 exports.getListings = async (req, res) => {
     try {
-        // SQL ΜΑΓΕΙΑ: Φέρε όσες είναι 'active' ΚΑΙ δημιουργήθηκαν αυστηρά τις τελευταίες 48 ώρες!
+        // μόνο ενεργές και φρέσκιες (τελευταίες 48 ώρες)
         const query = `
             SELECT * FROM listings 
             WHERE status = 'active' 
@@ -20,7 +20,7 @@ exports.getListings = async (req, res) => {
     }
 };
 
-// Η συνάρτηση για το POST
+// POST — νέα αγγελία
 exports.createListing = async (req, res) => {
     try {
         const { cook_id, title, photo_base64, notes, allergens, total_portions, pickup_location, pickup_time, latitude, longitude } = req.body;
@@ -31,36 +31,31 @@ exports.createListing = async (req, res) => {
 
         let photo_url = null;
 
-        // Αν μας έστειλε κείμενο εικόνας (Base64)
+        // φωτογραφία ως base64 → την σώζουμε σε αρχείο
         if (photo_base64) {
-            // Το Base64 String έχει αυτή τη μορφή: "data:image/png;base64,iVBORw0KGgo..."
-            // Χωρίζουμε την επικεφαλίδα από τα πραγματικά δεδομένα
-            // ΣΗΜΑΝΤΙΚΟ: Χρησιμοποιούμε [\s\S]+ αντί για .+ γιατί μεγάλα base64 strings
-            // μπορεί να περιέχουν newlines, και το .+ δεν τα πιάνει!
+            // χωρίζουμε το "data:image/...;base64," header από τα δεδομένα.
+            // [\s\S]+ (όχι .+) γιατί τα μεγάλα base64 περιέχουν newlines
             const matches = photo_base64.match(/^data:image\/([\w+.-]+);base64,([\s\S]+)$/);
 
             if (matches && matches.length === 3) {
-                let extension = matches[1]; // π.χ. png, jpeg, webp, heic
-                // Κανονικοποίηση: αν είναι heic/heif, αποθηκεύουμε ως jpeg (ο browser τα μετατρέπει)
+                let extension = matches[1];
+                // heic/heif τα κρατάμε ως jpeg (ο browser έχει ήδη μετατρέψει)
                 if (extension === 'heic' || extension === 'heif') extension = 'jpeg';
-                const imageData = matches[2].replace(/\s/g, ''); // Αφαιρούμε τυχόν whitespace/newlines
+                const imageData = matches[2].replace(/\s/g, ''); // καθάρισμα whitespace
 
-                // Μετατροπή του κειμένου ξανά σε αρχείο
                 const buffer = Buffer.from(imageData, 'base64');
-                const fileName = Date.now() + '.' + extension; // π.χ. 16543245.png
+                const fileName = Date.now() + '.' + extension;
 
-                // Ορίζουμε πού θα αποθηκευτεί, και αν δεν υπάρχει ο φάκελος τον δημιουργούμε
+                // δημιουργία του uploads αν λείπει
                 const uploadDir = path.join(__dirname, '../public/uploads');
                 if (!fs.existsSync(uploadDir)) {
                     fs.mkdirSync(uploadDir, { recursive: true });
                 }
                 const filePath = path.join(uploadDir, fileName);
 
-                // Γράφουμε το αρχείο στον δίσκο!
                 fs.writeFileSync(filePath, buffer);
 
-                // Κρατάμε το url για να το βάλουμε στη βάση
-                photo_url = '/uploads/' + fileName;
+                photo_url = '/uploads/' + fileName; // αυτό αποθηκεύεται στη βάση
             }
         }
 
@@ -86,14 +81,13 @@ exports.createListing = async (req, res) => {
     }
 };
 
-// --- Η συνάρτηση για την ΕΠΕΞΕΡΓΑΣΙΑ (PUT) ---
+// PUT — επεξεργασία αγγελίας
 exports.updateListing = async (req, res) => {
     try {
         const listingId = req.params.id;
-        // ΠΡΟΣΘΗΚΗ: Διαβάζουμε και το photo_base64!
         const { title, notes, total_portions, pickup_location, pickup_time, allergens, photo_base64, latitude, longitude } = req.body;
 
-        // 1. Βρίσκουμε την τρέχουσα κατάσταση της αγγελίας (παίρνουμε και το photo_url τώρα)
+        // τρέχουσα κατάσταση (χρειαζόμαστε μερίδες + παλιά φωτογραφία)
         const [currentListings] = await pool.query('SELECT total_portions, available_portions, photo_url FROM listings WHERE id = ?', [listingId]);
 
         if (currentListings.length === 0) {
@@ -102,16 +96,15 @@ exports.updateListing = async (req, res) => {
 
         const oldTotal = currentListings[0].total_portions;
         const oldAvailable = currentListings[0].available_portions;
-        let photo_url = currentListings[0].photo_url; // Κρατάμε την ΠΑΛΙΑ φωτογραφία από προεπιλογή
+        let photo_url = currentListings[0].photo_url; // κρατάμε την παλιά αν δεν ανέβηκε νέα
 
-        // --- ΝΕΟ: ΕΠΕΞΕΡΓΑΣΙΑ ΝΕΑΣ ΦΩΤΟΓΡΑΦΙΑΣ (Αν ανέβασε) ---
+        // νέα φωτογραφία (ίδια λογική με το create)
         if (photo_base64) {
-            // Ίδιο regex fix: [\w+.-] για MIME types και [\s\S]+ για μεγάλα base64 strings
             const matches = photo_base64.match(/^data:image\/([\w+.-]+);base64,([\s\S]+)$/);
             if (matches && matches.length === 3) {
                 let extension = matches[1];
                 if (extension === 'heic' || extension === 'heif') extension = 'jpeg';
-                const imageData = matches[2].replace(/\s/g, ''); // Αφαιρούμε whitespace
+                const imageData = matches[2].replace(/\s/g, '');
                 const buffer = Buffer.from(imageData, 'base64');
                 const fileName = Date.now() + '.' + extension;
 
@@ -122,11 +115,11 @@ exports.updateListing = async (req, res) => {
                 const filePath = path.join(uploadDir, fileName);
 
                 fs.writeFileSync(filePath, buffer);
-                photo_url = '/uploads/' + fileName; // Αντικαθιστούμε με το νέο link!
+                photo_url = '/uploads/' + fileName; // αντικατάσταση με τη νέα
             }
         }
 
-        // 2. Υπολογίζουμε πόσες μερίδες έχουν ήδη "κρατηθεί"
+        // πόσες μερίδες έχουν ήδη δεσμευτεί — δεν επιτρέπουμε να πέσει κάτω από αυτές
         const claimedPortions = oldTotal - oldAvailable;
         const newAvailable = total_portions - claimedPortions;
 
@@ -134,7 +127,6 @@ exports.updateListing = async (req, res) => {
             return res.status(400).json({ error: `Δεν μπορείς να μειώσεις τόσο τις μερίδες. Έχουν ήδη δοθεί ${claimedPortions} μερίδες!` });
         }
 
-        // 3. Ενημερώνουμε ΤΑ ΠΑΝΤΑ, μαζί με το photo_url!
         const query = `
             UPDATE listings
             SET title = ?, notes = ?, total_portions = ?, available_portions = ?, pickup_location = ?, pickup_time = ?, allergens = ?, photo_url = ?, latitude = ?, longitude = ?
@@ -144,7 +136,7 @@ exports.updateListing = async (req, res) => {
         const values = [
             title, notes, total_portions, newAvailable, pickup_location, pickup_time,
             allergens ? JSON.stringify(allergens) : null,
-            photo_url, // Το νέο ή το παλιό URL
+            photo_url, // νέα ή παλιά
             latitude || null, longitude || null,
             listingId
         ];
@@ -159,7 +151,7 @@ exports.updateListing = async (req, res) => {
     }
 };
 
-// --- ΝΕΟ: Η συνάρτηση για τη ΔΙΑΓΡΑΦΗ (DELETE) ---
+// DELETE — soft delete (status = deleted) + απόρριψη εκκρεμών αιτημάτων
 exports.deleteListing = async (req, res) => {
     try {
         const listingId = req.params.id;

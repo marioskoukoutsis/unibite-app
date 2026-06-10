@@ -21,7 +21,7 @@
 </nav>
 
 <div class="container" style="max-width: 450px;">
-    <!-- Header -->
+    <!-- Επικεφαλίδα -->
     <div style="text-align: center; margin-bottom: 2.5rem;">
         <h1 style="font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 0.5rem;">
             ⚙️ Ο Λογαριασμός μου
@@ -45,7 +45,7 @@
 
             <div class="form-group" style="margin-bottom: 0.5rem;">
                 <label>Αλλαγή κωδικού πρόσβασης</label>
-                <input type="password" id="acc-password" class="form-control" placeholder="Πληκτρολόγησε τον νέο κωδικό" required>
+                <input type="password" id="acc-password" class="form-control" placeholder="Άφησέ το κενό για να μην αλλάξει">
             </div>
             <div style="margin-bottom: 2.5rem; text-align: left;">
                 <label style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 5px;">
@@ -71,7 +71,7 @@
 
         const user = JSON.parse(storedUser);
 
-        // --- ΝΕΟ: Εμφάνιση Admin Portal στο Navigation αν είναι Admin ---
+        // προσθήκη Admin Portal στο μενού αν είναι admin
         if (user.role === 'admin') {
             const navLinks = document.querySelector('.navbar-links');
             if (navLinks) {
@@ -80,7 +80,7 @@
                 adminLink.textContent = 'Admin Portal';
                 adminLink.style.cssText = 'color: var(--text-main); font-weight: 700;';
 
-                // Το τοποθετούμε πριν από τον "Λογαριασμό μου"
+                // μπαίνει πριν τον "Λογαριασμό μου"
                 const accountLink = navLinks.querySelector('a[href="account.html"]');
                 if (accountLink) {
                     navLinks.insertBefore(adminLink, accountLink);
@@ -90,11 +90,11 @@
             }
         }
 
-        // Γεμίζουμε τη φόρμα με τα τρέχοντα στοιχεία
+        // γεμίζουμε τη φόρμα με τα τρέχοντα στοιχεία
         document.getElementById('acc-name').value = user.name;
         document.getElementById('acc-email').value = user.email;
 
-        // Λειτουργία Εμφάνισης Κωδικού
+        // εμφάνιση/απόκρυψη κωδικού
         document.getElementById('show-acc-pass').addEventListener('change', function() {
             document.getElementById('acc-password').type = this.checked ? 'text' : 'password';
         });
@@ -106,7 +106,7 @@
             window.location.href = 'index.html';
         });
 
-        // Υποβολή Form (Update)
+        // υποβολή — ενημέρωση στοιχείων
         document.getElementById('account-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('acc-name').value;
@@ -114,11 +114,17 @@
             const password = document.getElementById('acc-password').value;
             const messageDiv = document.getElementById('acc-message');
 
+            // Στέλνουμε τον κωδικό μόνο αν ο χρήστης πληκτρολόγησε νέο
+            const payload = { name, email };
+            if (password) {
+                payload.password = password;
+            }
+
             try {
                 const response = await fetch(`/api/auth/update/${user.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password })
+                    body: JSON.stringify(payload)
                 });
                 const result = await response.json();
 
