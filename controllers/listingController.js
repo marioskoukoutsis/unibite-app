@@ -23,7 +23,7 @@ exports.getListings = async (req, res) => {
 // Η συνάρτηση για το POST
 exports.createListing = async (req, res) => {
     try {
-        const { cook_id, title, photo_base64, notes, allergens, total_portions, pickup_location, pickup_time } = req.body;
+        const { cook_id, title, photo_base64, notes, allergens, total_portions, pickup_location, pickup_time, latitude, longitude } = req.body;
 
         if (!cook_id || !title || !total_portions || !pickup_location || !pickup_time) {
             return res.status(400).json({ error: 'Λείπουν υποχρεωτικά πεδία' });
@@ -66,14 +66,15 @@ exports.createListing = async (req, res) => {
 
         const query = `
             INSERT INTO listings 
-            (cook_id, title, photo_url, notes, allergens, total_portions, available_portions, pickup_location, pickup_time) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (cook_id, title, photo_url, notes, allergens, total_portions, available_portions, pickup_location, pickup_time, latitude, longitude) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
         const values = [
             cook_id, title, photo_url, notes || null,
             allergens ? JSON.stringify(allergens) : null,
-            total_portions, total_portions, pickup_location, pickup_time
+            total_portions, total_portions, pickup_location, pickup_time,
+            latitude || null, longitude || null
         ];
 
         const [result] = await pool.query(query, values);
@@ -90,7 +91,7 @@ exports.updateListing = async (req, res) => {
     try {
         const listingId = req.params.id;
         // ΠΡΟΣΘΗΚΗ: Διαβάζουμε και το photo_base64!
-        const { title, notes, total_portions, pickup_location, pickup_time, allergens, photo_base64 } = req.body;
+        const { title, notes, total_portions, pickup_location, pickup_time, allergens, photo_base64, latitude, longitude } = req.body;
 
         // 1. Βρίσκουμε την τρέχουσα κατάσταση της αγγελίας (παίρνουμε και το photo_url τώρα)
         const [currentListings] = await pool.query('SELECT total_portions, available_portions, photo_url FROM listings WHERE id = ?', [listingId]);
@@ -136,7 +137,7 @@ exports.updateListing = async (req, res) => {
         // 3. Ενημερώνουμε ΤΑ ΠΑΝΤΑ, μαζί με το photo_url!
         const query = `
             UPDATE listings
-            SET title = ?, notes = ?, total_portions = ?, available_portions = ?, pickup_location = ?, pickup_time = ?, allergens = ?, photo_url = ?
+            SET title = ?, notes = ?, total_portions = ?, available_portions = ?, pickup_location = ?, pickup_time = ?, allergens = ?, photo_url = ?, latitude = ?, longitude = ?
             WHERE id = ?
         `;
 
@@ -144,6 +145,7 @@ exports.updateListing = async (req, res) => {
             title, notes, total_portions, newAvailable, pickup_location, pickup_time,
             allergens ? JSON.stringify(allergens) : null,
             photo_url, // Το νέο ή το παλιό URL
+            latitude || null, longitude || null,
             listingId
         ];
 

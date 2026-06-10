@@ -43,3 +43,5 @@ CREATE TABLE requests (
 );
 
 ALTER TABLE users ADD COLUMN password VARCHAR(255) NOT NULL AFTER email;
+ALTER TABLE listings ADD COLUMN latitude DECIMAL(9,6) DEFAULT NULL AFTER pickup_time;
+ALTER TABLE listings ADD COLUMN longitude DECIMAL(9,6) DEFAULT NULL AFTER latitude;

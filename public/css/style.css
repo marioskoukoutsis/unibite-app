@@ -1201,3 +1201,52 @@ body {
     opacity: 0 !important;
     pointer-events: none !important;
 }
+
+/* =========================================
+   9. AUTOCOMPLETE & COOK MAP
+   ========================================= */
+
+.autocomplete-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    margin-top: 4px;
+    display: none;
+}
+
+.autocomplete-suggestion {
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    color: var(--text-main);
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.2s ease;
+    text-align: left;
+}
+
+.autocomplete-suggestion:last-child {
+    border-bottom: none;
+}
+
+.autocomplete-suggestion:hover {
+    background-color: var(--bg-color);
+}
+
+#btn-detect-gps {
+    transition: color 0.2s ease !important;
+}
+
+#btn-detect-gps:hover {
+    color: var(--primary-color) !important;
+    transform: translateY(-50%) !important;
+}
+
+

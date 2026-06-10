@@ -29,6 +29,275 @@ document.addEventListener('DOMContentLoaded', () => {
     // Εδώ θα αποθηκεύουμε προσωρινά τις αγγελίες για να τις διαβάζει η Επεξεργασία
     let currentListings = [];
 
+    let cookMap = null;
+    let cookMarker = null;
+
+    function cleanCityName(cityName) {
+        if (!cityName) return '';
+        
+        // Normalize string to remove accents and convert to lowercase for prefix matching
+        const normalized = cityName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        
+        // Prefix regex matching common Greek administrative divisions
+        const prefixRegex = /^(δημος|δημοτικη ενοτητα|περιφερειακη ενοτητα|περιφερεια|δημοτικη κοινοτητα|τοπικη κοινοτητα|κοινοτητα)\s+/i;
+        const match = normalized.match(prefixRegex);
+        
+        let baseOriginal = cityName.trim();
+        let baseNormalized = normalized;
+        
+        if (match) {
+            const matchLength = match[0].length;
+            baseOriginal = cityName.trim().slice(matchLength).trim();
+            baseNormalized = normalized.slice(matchLength).trim();
+        }
+        
+        // Map common Greek city genitives/variations to their clean nominative name
+        const map = {
+            'πατρεων': 'Πάτρα',
+            'πατρων': 'Πάτρα',
+            'πατρα': 'Πάτρα',
+            'αθηναιων': 'Αθήνα',
+            'αθηνα': 'Αθήνα',
+            'θεσσαλονικης': 'Θεσσαλονίκη',
+            'θεσσαλονικη': 'Θεσσαλονίκη',
+            'πειραιως': 'Πειραιάς',
+            'πειραιας': 'Πειραιάς',
+            'λαρισαιων': 'Λάρισα',
+            'λαρισα': 'Λάρισα',
+            'ηρακλειου': 'Ηράκλειο',
+            'ηρακλειο': 'Ηράκλειο',
+            'βολου': 'Βόλος',
+            'βολος': 'Βόλος',
+            'ιωαννιτων': 'Ιωάννινα',
+            'ιωαννινα': 'Ιωάννινα',
+            'χανιων': 'Χανιά',
+            'χανια': 'Χανιά',
+            'χαλκιδεων': 'Χαλκίδα',
+            'χαλκιδα': 'Χαλκίδα'
+        };
+        
+        return map[baseNormalized] || baseOriginal;
+    }
+
+    // Fetch address suggestions from Nominatim API (global search)
+    async function fetchAddressSuggestions(query) {
+        if (!query || query.trim().length < 3) return [];
+
+        // Extract street number from user query if present
+        const queryNumberMatch = query.match(/\b\d+\b/);
+        const queryNumber = queryNumberMatch ? queryNumberMatch[0] : '';
+
+        try {
+            const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&addressdetails=1&q=${encodeURIComponent(query.trim())}`;
+            const response = await fetch(url, {
+                headers: {
+                    'Accept-Language': 'el,en',
+                    'User-Agent': 'UniBiteApp/1.0'
+                }
+            });
+            if (!response.ok) return [];
+            const data = await response.json();
+            return data.map(item => {
+                const addr = item.address || {};
+                const parts = [];
+                
+                const rawParts = item.display_name ? item.display_name.split(',').map(s => s.trim()) : [];
+                const road = addr.road || addr.pedestrian || addr.highway || addr.path || rawParts[0] || '';
+                let number = addr.house_number || '';
+                
+                if (!number && queryNumber && !/\d/.test(road)) {
+                    number = queryNumber;
+                }
+
+                if (road) {
+                    parts.push(number ? `${road} ${number}` : road);
+                }
+                
+                const area = addr.suburb || addr.neighbourhood || addr.quarter || addr.subdivision || '';
+                if (area) {
+                    parts.push(area);
+                }
+                
+                const cityRaw = addr.city || addr.town || addr.village || addr.municipality || addr.city_district || '';
+                const city = cleanCityName(cityRaw);
+                if (city) {
+                    parts.push(city);
+                }
+                
+                const country = addr.country || '';
+                if (country) {
+                    parts.push(country);
+                }
+                
+                let cleanName = parts.join(', ');
+                if (!cleanName && item.display_name) {
+                    cleanName = item.display_name.split(',').slice(0, 4).map(s => s.trim()).join(', ');
+                }
+                
+                return {
+                    display_name: cleanName || item.display_name,
+                    lat: parseFloat(item.lat),
+                    lon: parseFloat(item.lon)
+                };
+            });
+        } catch (e) {
+            console.error('Error fetching autocomplete suggestions:', e);
+            return [];
+        }
+    }
+
+    function setupAutocomplete(inputEl, suggestionsEl, onSelect) {
+        let debounceTimer = null;
+
+        inputEl.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            const query = inputEl.value;
+
+            if (query.trim().length < 3) {
+                suggestionsEl.innerHTML = '';
+                suggestionsEl.style.display = 'none';
+                return;
+            }
+
+            debounceTimer = setTimeout(async () => {
+                const results = await fetchAddressSuggestions(query);
+                if (results.length === 0) {
+                    suggestionsEl.innerHTML = '';
+                    suggestionsEl.style.display = 'none';
+                    return;
+                }
+
+                suggestionsEl.innerHTML = '';
+                results.forEach(res => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'autocomplete-suggestion';
+                    itemDiv.textContent = res.display_name;
+                    itemDiv.addEventListener('click', () => {
+                        inputEl.value = res.display_name;
+                        suggestionsEl.innerHTML = '';
+                        suggestionsEl.style.display = 'none';
+                        onSelect(res);
+                    });
+                    suggestionsEl.appendChild(itemDiv);
+                });
+                suggestionsEl.style.display = 'block';
+            }, 300);
+        });
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!inputEl.contains(e.target) && !suggestionsEl.contains(e.target)) {
+                suggestionsEl.innerHTML = '';
+                suggestionsEl.style.display = 'none';
+            }
+        });
+    }
+
+    async function reverseGeocode(lat, lon) {
+        try {
+            const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
+            const response = await fetch(url, {
+                headers: {
+                    'Accept-Language': 'el,en',
+                    'User-Agent': 'UniBiteApp/1.0'
+                }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                if (data) {
+                    const addr = data.address || {};
+                    const parts = [];
+                    
+                    const road = addr.road || addr.pedestrian || addr.highway || addr.path || '';
+                    const number = addr.house_number || '';
+                    if (road) {
+                        parts.push(number ? `${road} ${number}` : road);
+                    }
+                    
+                    const area = addr.suburb || addr.neighbourhood || addr.quarter || addr.subdivision || '';
+                    if (area) {
+                        parts.push(area);
+                    }
+                    
+                    const cityRaw = addr.city || addr.town || addr.village || addr.municipality || addr.city_district || '';
+                    const city = cleanCityName(cityRaw);
+                    if (city) {
+                        parts.push(city);
+                    }
+                    
+                    const country = addr.country || '';
+                    if (country) {
+                        parts.push(country);
+                    }
+                    
+                    let cleanName = parts.join(', ');
+                    if (!cleanName && data.display_name) {
+                        cleanName = data.display_name.split(',').slice(0, 4).map(s => s.trim()).join(', ');
+                    }
+                    
+                    document.getElementById('location').value = cleanName || data.display_name;
+                }
+            }
+        } catch (e) {
+            console.error('Reverse geocoding failed:', e);
+        }
+    }
+
+    function initCookMap(lat = 40.6401, lon = 22.9444, zoom = 13) {
+        const mapContainer = document.getElementById('cook-map');
+        if (!mapContainer) return;
+
+        if (!cookMap) {
+            cookMap = L.map('cook-map').setView([lat, lon], zoom);
+            L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                attribution: '&copy; Google Maps'
+            }).addTo(cookMap);
+        } else {
+            cookMap.setView([lat, lon], zoom);
+        }
+
+        updateCookMarker(lat, lon);
+    }
+
+    function updateCookMarker(lat, lon) {
+        if (!cookMap) return;
+
+        const pinIconHtml = `
+            <svg viewBox="0 0 24 24" width="36" height="36" style="display: block; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.35));">
+                <path fill="#e05d3a" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" stroke="#ffffff" stroke-width="1.5"/>
+            </svg>
+        `;
+
+        const customIcon = L.divIcon({
+            html: pinIconHtml,
+            className: 'cook-location-marker',
+            iconSize: [36, 36],
+            iconAnchor: [18, 36]
+        });
+
+        if (cookMarker) {
+            cookMarker.setLatLng([lat, lon]);
+        } else {
+            cookMarker = L.marker([lat, lon], {
+                icon: customIcon,
+                draggable: true
+            }).addTo(cookMap);
+
+            cookMarker.on('dragend', async () => {
+                const position = cookMarker.getLatLng();
+                const newLat = position.lat;
+                const newLon = position.lng;
+
+                document.getElementById('latitude').value = newLat.toFixed(6);
+                document.getElementById('longitude').value = newLon.toFixed(6);
+
+                await reverseGeocode(newLat, newLon);
+            });
+        }
+
+        cookMap.setView([lat, lon]);
+    }
+
     // --- ΠΕΡΙΟΡΙΣΜΟΣ ΗΜΕΡΟΜΗΝΙΑΣ (48 Ώρες) ---
     const timeInput = document.getElementById('time');
     const getLocalISOString = (date) => {
@@ -43,6 +312,101 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     fetchMyListings();
+    initCookMap();
+
+    const locationInput = document.getElementById('location');
+    const locationSuggestions = document.getElementById('location-suggestions');
+    if (locationInput && locationSuggestions) {
+        setupAutocomplete(locationInput, locationSuggestions, (selected) => {
+            const lat = selected.lat;
+            const lon = selected.lon;
+            document.getElementById('latitude').value = lat.toFixed(6);
+            document.getElementById('longitude').value = lon.toFixed(6);
+            initCookMap(lat, lon, 16);
+        });
+    }
+
+    async function fallbackCookIPLocation(inputEl, originalPlaceholder) {
+        try {
+            const response = await fetch('https://ipapi.co/json/');
+            if (response.ok) {
+                const data = await response.json();
+                if (data && data.latitude && data.longitude) {
+                    const lat = parseFloat(data.latitude);
+                    const lon = parseFloat(data.longitude);
+                    
+                    document.getElementById('latitude').value = lat.toFixed(6);
+                    document.getElementById('longitude').value = lon.toFixed(6);
+
+                    await reverseGeocode(lat, lon);
+                    initCookMap(lat, lon, 16);
+
+                    if (inputEl) {
+                        inputEl.placeholder = originalPlaceholder;
+                    }
+                    return true;
+                }
+            }
+        } catch (e) {
+            console.error('IP Geolocation fallback failed:', e);
+        }
+        return false;
+    }
+
+    function detectCookLocation() {
+        if (!navigator.geolocation) {
+            console.warn('Geolocation not supported.');
+            fallbackCookIPLocation(document.getElementById('location'), '');
+            return;
+        }
+
+        const inputLocation = document.getElementById('location');
+        const originalPlaceholder = inputLocation ? inputLocation.placeholder : '';
+        if (inputLocation) {
+            inputLocation.placeholder = 'Εντοπισμός τοποθεσίας...';
+        }
+
+        const successCallback = async (position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+
+            document.getElementById('latitude').value = lat.toFixed(6);
+            document.getElementById('longitude').value = lon.toFixed(6);
+
+            await reverseGeocode(lat, lon);
+            initCookMap(lat, lon, 16);
+
+            if (inputLocation) {
+                inputLocation.placeholder = originalPlaceholder;
+            }
+        };
+
+        // Try high accuracy (GPS/Wi-Fi positioning) first
+        navigator.geolocation.getCurrentPosition(
+            successCallback,
+            (error) => {
+                console.warn('High accuracy geolocation failed/timed out. Trying IP fallback...', error);
+                // Fallback to low accuracy (IP positioning)
+                navigator.geolocation.getCurrentPosition(
+                    successCallback,
+                    async (error2) => {
+                        console.warn('Low accuracy geolocation also failed. Trying IP API fallback...', error2);
+                        const ipSuccess = await fallbackCookIPLocation(inputLocation, originalPlaceholder);
+                        if (!ipSuccess && inputLocation) {
+                            inputLocation.placeholder = originalPlaceholder;
+                        }
+                    },
+                    { enableHighAccuracy: false, timeout: 8000, maximumAge: Infinity }
+                );
+            },
+            { enableHighAccuracy: true, timeout: 4000, maximumAge: 0 }
+        );
+    }
+
+    const btnDetectGps = document.getElementById('btn-detect-gps');
+    if (btnDetectGps) {
+        btnDetectGps.addEventListener('click', detectCookLocation);
+    }
 
     // Συμπίεση & Resize φωτογραφίας πριν την αποστολή
     // Οι φωτογραφίες κινητού είναι συχνά 5-15MB+ και σπάνε το όριο του server.
@@ -97,6 +461,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const allergensInput = document.getElementById('allergens').value;
+        const latVal = document.getElementById('latitude').value;
+        const lonVal = document.getElementById('longitude').value;
+
         const listingData = {
             cook_id: currentCookId,
             title: document.getElementById('title').value,
@@ -105,7 +472,9 @@ document.addEventListener('DOMContentLoaded', () => {
             pickup_time: document.getElementById('time').value,
             notes: document.getElementById('notes').value,
             allergens: allergensInput ? allergensInput.split(',').map(item => item.trim()) : [],
-            photo_base64: photoBase64String
+            photo_base64: photoBase64String,
+            latitude: latVal ? parseFloat(latVal) : null,
+            longitude: lonVal ? parseFloat(lonVal) : null
         };
 
         try {
@@ -200,6 +569,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('title').value = listing.title;
         document.getElementById('portions').value = listing.total_portions;
         document.getElementById('location').value = listing.pickup_location;
+        document.getElementById('latitude').value = listing.latitude || '';
+        document.getElementById('longitude').value = listing.longitude || '';
 
         const dateObj = new Date(listing.pickup_time);
         document.getElementById('time').value = getLocalISOString(dateObj);
@@ -219,6 +590,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('submit-btn').textContent = 'Αποθήκευση Αλλαγών';
         document.getElementById('cancel-edit-btn').style.display = 'inline-block';
 
+        // Update map pin
+        if (listing.latitude !== null && listing.longitude !== null) {
+            initCookMap(parseFloat(listing.latitude), parseFloat(listing.longitude), 16);
+        } else {
+            initCookMap(40.6401, 22.9444, 13);
+        }
+
         // Ανεβαίνουμε στην κορυφή της σελίδας για να δει τη φόρμα
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -227,10 +605,16 @@ document.addEventListener('DOMContentLoaded', () => {
     window.cancelEdit = function() {
         form.reset();
         document.getElementById('edit-listing-id').value = '';
+        document.getElementById('latitude').value = '';
+        document.getElementById('longitude').value = '';
         document.getElementById('form-title').textContent = 'Δημιουργία Αγγελίας';
         document.getElementById('submit-btn').textContent = 'Ανέβασμα Αγγελίας';
         document.getElementById('cancel-edit-btn').style.display = 'none';
         messageDiv.textContent = '';
+
+        if (cookMap) {
+            initCookMap(40.6401, 22.9444, 13);
+        }
     };
 
     const requestsContainer = document.getElementById('requests-container');

@@ -76,6 +76,167 @@ document.addEventListener('DOMContentLoaded', () => {
         return R * c;
     }
 
+    function cleanCityName(cityName) {
+        if (!cityName) return '';
+        
+        // Normalize string to remove accents and convert to lowercase for prefix matching
+        const normalized = cityName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        
+        // Prefix regex matching common Greek administrative divisions
+        const prefixRegex = /^(δημος|δημοτικη ενοτητα|περιφερειακη ενοτητα|περιφερεια|δημοτικη κοινοτητα|τοπικη κοινοτητα|κοινοτητα)\s+/i;
+        const match = normalized.match(prefixRegex);
+        
+        let baseOriginal = cityName.trim();
+        let baseNormalized = normalized;
+        
+        if (match) {
+            const matchLength = match[0].length;
+            baseOriginal = cityName.trim().slice(matchLength).trim();
+            baseNormalized = normalized.slice(matchLength).trim();
+        }
+        
+        // Map common Greek city genitives/variations to their clean nominative name
+        const map = {
+            'πατρεων': 'Πάτρα',
+            'πατρων': 'Πάτρα',
+            'πατρα': 'Πάτρα',
+            'αθηναιων': 'Αθήνα',
+            'αθηνα': 'Αθήνα',
+            'θεσσαλονικης': 'Θεσσαλονίκη',
+            'θεσσαλονικη': 'Θεσσαλονίκη',
+            'πειραιως': 'Πειραιάς',
+            'πειραιας': 'Πειραιάς',
+            'λαρισαιων': 'Λάρισα',
+            'λαρισα': 'Λάρισα',
+            'ηρακλειου': 'Ηράκλειο',
+            'ηρακλειο': 'Ηράκλειο',
+            'βολου': 'Βόλος',
+            'βολος': 'Βόλος',
+            'ιωαννιτων': 'Ιωάννινα',
+            'ιωαννινα': 'Ιωάννινα',
+            'χανιων': 'Χανιά',
+            'χανια': 'Χανιά',
+            'χαλκιδεων': 'Χαλκίδα',
+            'χαλκιδα': 'Χαλκίδα'
+        };
+        
+        return map[baseNormalized] || baseOriginal;
+    }
+
+    // Fetch address suggestions from Nominatim API (global search)
+    async function fetchAddressSuggestions(query) {
+        if (!query || query.trim().length < 3) return [];
+        
+        // Extract street number from user query if present
+        const queryNumberMatch = query.match(/\b\d+\b/);
+        const queryNumber = queryNumberMatch ? queryNumberMatch[0] : '';
+
+        try {
+            const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&addressdetails=1&q=${encodeURIComponent(query.trim())}`;
+            const response = await fetch(url, {
+                headers: {
+                    'Accept-Language': 'el,en',
+                    'User-Agent': 'UniBiteApp/1.0'
+                }
+            });
+            if (!response.ok) return [];
+            const data = await response.json();
+            return data.map(item => {
+                const addr = item.address || {};
+                const parts = [];
+                
+                const rawParts = item.display_name ? item.display_name.split(',').map(s => s.trim()) : [];
+                const road = addr.road || addr.pedestrian || addr.highway || addr.path || rawParts[0] || '';
+                let number = addr.house_number || '';
+                
+                if (!number && queryNumber && !/\d/.test(road)) {
+                    number = queryNumber;
+                }
+
+                if (road) {
+                    parts.push(number ? `${road} ${number}` : road);
+                }
+                
+                const area = addr.suburb || addr.neighbourhood || addr.quarter || addr.subdivision || '';
+                if (area) {
+                    parts.push(area);
+                }
+                
+                const cityRaw = addr.city || addr.town || addr.village || addr.municipality || addr.city_district || '';
+                const city = cleanCityName(cityRaw);
+                if (city) {
+                    parts.push(city);
+                }
+                
+                const country = addr.country || '';
+                if (country) {
+                    parts.push(country);
+                }
+                
+                let cleanName = parts.join(', ');
+                if (!cleanName && item.display_name) {
+                    cleanName = item.display_name.split(',').slice(0, 4).map(s => s.trim()).join(', ');
+                }
+                
+                return {
+                    display_name: cleanName || item.display_name,
+                    lat: parseFloat(item.lat),
+                    lon: parseFloat(item.lon)
+                };
+            });
+        } catch (e) {
+            console.error('Error fetching autocomplete suggestions:', e);
+            return [];
+        }
+    }
+
+    function setupAutocomplete(inputEl, suggestionsEl, onSelect) {
+        let debounceTimer = null;
+
+        inputEl.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            const query = inputEl.value;
+
+            if (query.trim().length < 3) {
+                suggestionsEl.innerHTML = '';
+                suggestionsEl.style.display = 'none';
+                return;
+            }
+
+            debounceTimer = setTimeout(async () => {
+                const results = await fetchAddressSuggestions(query);
+                if (results.length === 0) {
+                    suggestionsEl.innerHTML = '';
+                    suggestionsEl.style.display = 'none';
+                    return;
+                }
+
+                suggestionsEl.innerHTML = '';
+                results.forEach(res => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'autocomplete-suggestion';
+                    itemDiv.textContent = res.display_name;
+                    itemDiv.addEventListener('click', () => {
+                        inputEl.value = res.display_name;
+                        suggestionsEl.innerHTML = '';
+                        suggestionsEl.style.display = 'none';
+                        onSelect(res);
+                    });
+                    suggestionsEl.appendChild(itemDiv);
+                });
+                suggestionsEl.style.display = 'block';
+            }, 300);
+        });
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!inputEl.contains(e.target) && !suggestionsEl.contains(e.target)) {
+                suggestionsEl.innerHTML = '';
+                suggestionsEl.style.display = 'none';
+            }
+        });
+    }
+
     // Geocode an address string via free Nominatim API with cache
     async function geocodeAddress(address) {
         if (!address) return null;
@@ -110,7 +271,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Geocode all listing locations sequentially with a rate limit delay
     async function geocodeAllListingsAndRefresh(listings) {
-        const locations = [...new Set(listings.map(l => l.pickup_location))];
+        const locations = [...new Set(
+            listings
+                .filter(l => l.latitude === null || l.longitude === null)
+                .map(l => l.pickup_location)
+        )];
         let hasNewGeocodes = false;
         
         for (const loc of locations) {
@@ -154,6 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         markersGroup.clearLayers();
+        window.listingMarkers = {};
 
         // User location marker (Google Maps style blue pin)
         if (userLocation) {
@@ -189,8 +355,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         listings.forEach(item => {
-            const coords = geocodeCache[item.pickup_location];
-            if (coords) {
+            let lat = null;
+            let lon = null;
+            if (item.latitude !== null && item.longitude !== null) {
+                lat = parseFloat(item.latitude);
+                lon = parseFloat(item.longitude);
+            } else {
+                const coords = geocodeCache[item.pickup_location];
+                if (coords) {
+                    lat = coords.lat;
+                    lon = coords.lon;
+                }
+            }
+
+            if (lat !== null && lon !== null) {
                 const isSoldOut = item.available_portions === 0;
                 // Google Maps style red/terracotta pin or gray if sold out
                 const pinColor = isSoldOut ? '#9ca3af' : '#e05d3a';
@@ -223,11 +401,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
 
-                const marker = L.marker([coords.lat, coords.lon], { icon: customIcon })
+                const marker = L.marker([lat, lon], { icon: customIcon })
                     .bindPopup(popupContent);
                 
                 markersGroup.addLayer(marker);
-                bounds.push([coords.lat, coords.lon]);
+                window.listingMarkers[item.id] = marker;
+                bounds.push([lat, lon]);
             }
         });
 
@@ -241,9 +420,20 @@ document.addEventListener('DOMContentLoaded', () => {
     async function processAndRenderFeed() {
         const listingsWithDistance = allListings.map(item => {
             let distance = null;
-            const coords = geocodeCache[item.pickup_location];
-            if (userLocation && coords) {
-                distance = calculateDistance(userLocation.lat, userLocation.lon, coords.lat, coords.lon);
+            let lat = null;
+            let lon = null;
+            if (item.latitude !== null && item.longitude !== null) {
+                lat = parseFloat(item.latitude);
+                lon = parseFloat(item.longitude);
+            } else {
+                const coords = geocodeCache[item.pickup_location];
+                if (coords) {
+                    lat = coords.lat;
+                    lon = coords.lon;
+                }
+            }
+            if (userLocation && lat !== null && lon !== null) {
+                distance = calculateDistance(userLocation.lat, userLocation.lon, lat, lon);
             }
             return { ...item, distance };
         });
@@ -335,6 +525,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
             }
             
+            let lat = null;
+            let lon = null;
+            if (item.latitude !== null && item.longitude !== null) {
+                lat = parseFloat(item.latitude);
+                lon = parseFloat(item.longitude);
+            } else {
+                const coords = geocodeCache[item.pickup_location];
+                if (coords) {
+                    lat = coords.lat;
+                    lon = coords.lon;
+                }
+            }
+            
             card.innerHTML = `
                 ${item.photo_url ? `<img src="${item.photo_url}" alt="${escapeHTML(item.title)}" class="food-img">` : ''}
                 <div class="card-content">
@@ -346,17 +549,49 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${item.notes ? `<p class="notes" style="font-style: italic; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.6rem;">"${escapeHTML(item.notes)}"</p>` : ''}
                     ${allergensHTML}
                     
-                    <button class="btn btn-order" 
-                        onclick="requestPortion(${item.id})" 
-                        style="width: 100%; margin-top: 0.5rem;"
-                        ${isSoldOut ? 'disabled' : ''}>
-                        ${isSoldOut ? 'Εξαντλήθηκε' : 'Θέλω Μερίδα!'}
-                    </button>
+                    <div style="display: flex; gap: 10px; margin-top: 0.5rem;">
+                        <button class="btn btn-order" 
+                            onclick="requestPortion(${item.id})" 
+                            style="flex: 1; margin: 0; padding: 0.5rem;"
+                            ${isSoldOut ? 'disabled' : ''}>
+                            ${isSoldOut ? 'Εξαντλήθηκε' : 'Θέλω Μερίδα!'}
+                        </button>
+                        ${(lat && lon) ? `
+                        <button class="btn" 
+                            onclick="showListingOnMap(${item.id}, ${lat}, ${lon})" 
+                            style="background-color: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); box-shadow: none; padding: 0.5rem; flex: 1; font-weight: 600; margin: 0;">
+                            🗺️ Στο χάρτη
+                        </button>` : ''}
+                    </div>
                 </div>
             `;
             feedContainer.appendChild(card);
         });
     }
+
+    window.showListingOnMap = function(listingId, lat, lon) {
+        currentView = 'map';
+        const toggleListBtn = document.getElementById('toggle-list');
+        const toggleMapBtn = document.getElementById('toggle-map');
+        const mapViewContainer = document.getElementById('map-view-container');
+        const feedContainer = document.getElementById('feed-container');
+        
+        if (toggleListBtn && toggleMapBtn && mapViewContainer && feedContainer) {
+            toggleMapBtn.classList.add('active');
+            toggleListBtn.classList.remove('active');
+            feedContainer.classList.add('hidden-view');
+            mapViewContainer.classList.remove('hidden-view');
+        }
+        
+        if (map) {
+            map.invalidateSize(true);
+            map.setView([lat, lon], 16);
+            
+            if (window.listingMarkers && window.listingMarkers[listingId]) {
+                window.listingMarkers[listingId].openPopup();
+            }
+        }
+    };
 
     // Geocoding user address input handler
     async function handleGeocodeUserAddress() {
@@ -414,6 +649,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 handleGeocodeUserAddress();
             }
         });
+        const userAddressSuggestions = document.getElementById('user-address-suggestions');
+        if (userAddressSuggestions) {
+            setupAutocomplete(inputAddress, userAddressSuggestions, async (selected) => {
+                userLocation = { lat: selected.lat, lon: selected.lon };
+                localStorage.setItem('unibite_user_address', selected.display_name);
+                localStorage.setItem('unibite_user_coords', JSON.stringify(userLocation));
+                
+                if (!map) {
+                    initMap();
+                } else {
+                    map.setView([userLocation.lat, userLocation.lon], 13);
+                }
+
+                await processAndRenderFeed();
+            });
+        }
     }
     if (sliderDistance) {
         sliderDistance.addEventListener('input', (e) => {
@@ -566,9 +817,159 @@ async function fetchMyOrders() {
     }
 }
 
+    async function reverseGeocodeUserAddress(lat, lon) {
+        try {
+            const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
+            const response = await fetch(url, {
+                headers: {
+                    'Accept-Language': 'el,en',
+                    'User-Agent': 'UniBiteApp/1.0'
+                }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                if (data) {
+                    const addr = data.address || {};
+                    const parts = [];
+                    
+                    const road = addr.road || addr.pedestrian || addr.highway || addr.path || '';
+                    const number = addr.house_number || '';
+                    if (road) {
+                        parts.push(number ? `${road} ${number}` : road);
+                    }
+                    
+                    const area = addr.suburb || addr.neighbourhood || addr.quarter || addr.subdivision || '';
+                    if (area) {
+                        parts.push(area);
+                    }
+                    
+                    const cityRaw = addr.city || addr.town || addr.village || addr.municipality || addr.city_district || '';
+                    const city = cleanCityName(cityRaw);
+                    if (city) {
+                        parts.push(city);
+                    }
+                    
+                    const country = addr.country || '';
+                    if (country) {
+                        parts.push(country);
+                    }
+                    
+                    let cleanName = parts.join(', ');
+                    if (!cleanName && data.display_name) {
+                        cleanName = data.display_name.split(',').slice(0, 4).map(s => s.trim()).join(', ');
+                    }
+                    
+                    const inputAddress = document.getElementById('user-address');
+                    if (inputAddress) {
+                        inputAddress.value = cleanName || data.display_name;
+                    }
+                    localStorage.setItem('unibite_user_address', cleanName || data.display_name);
+                }
+            }
+        } catch (e) {
+            console.error('Reverse geocoding user coordinates failed:', e);
+        }
+    }
+
+    async function fallbackIPLocation(inputEl, originalPlaceholder) {
+        try {
+            const response = await fetch('https://ipapi.co/json/');
+            if (response.ok) {
+                const data = await response.json();
+                if (data && data.latitude && data.longitude) {
+                    const lat = parseFloat(data.latitude);
+                    const lon = parseFloat(data.longitude);
+                    userLocation = { lat, lon };
+
+                    localStorage.setItem('unibite_user_coords', JSON.stringify(userLocation));
+
+                    await reverseGeocodeUserAddress(lat, lon);
+
+                    if (!map) {
+                        initMap();
+                    } else {
+                        map.setView([lat, lon], 13);
+                    }
+                    await processAndRenderFeed();
+                    if (inputEl) {
+                        inputEl.placeholder = originalPlaceholder;
+                    }
+                    return true;
+                }
+            }
+        } catch (e) {
+            console.error('IP Geolocation fallback failed:', e);
+        }
+        return false;
+    }
+
+    function detectUserLocation() {
+        if (!navigator.geolocation) {
+            console.warn('Geolocation not supported by browser.');
+            fallbackIPLocation(document.getElementById('user-address'), '');
+            return;
+        }
+
+        const inputAddress = document.getElementById('user-address');
+        const originalPlaceholder = inputAddress ? inputAddress.placeholder : '';
+        if (inputAddress) {
+            inputAddress.placeholder = 'Εντοπισμός τοποθεσίας...';
+        }
+
+        const successCallback = async (position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            userLocation = { lat, lon };
+
+            await reverseGeocodeUserAddress(lat, lon);
+            
+            localStorage.setItem('unibite_user_coords', JSON.stringify(userLocation));
+
+            if (!map) {
+                initMap();
+            } else {
+                map.setView([lat, lon], 13);
+            }
+
+            await processAndRenderFeed();
+            if (inputAddress) {
+                inputAddress.placeholder = originalPlaceholder;
+            }
+        };
+
+        // Try high accuracy (GPS/Wi-Fi positioning) first
+        navigator.geolocation.getCurrentPosition(
+            successCallback,
+            (error) => {
+                console.warn('High accuracy geolocation failed/timed out. Trying IP fallback...', error);
+                // Fallback to low accuracy (IP positioning)
+                navigator.geolocation.getCurrentPosition(
+                    successCallback,
+                    async (error2) => {
+                        console.warn('Low accuracy geolocation also failed. Trying IP API fallback...', error2);
+                        const ipSuccess = await fallbackIPLocation(inputAddress, originalPlaceholder);
+                        if (!ipSuccess && inputAddress) {
+                            inputAddress.placeholder = originalPlaceholder;
+                        }
+                    },
+                    { enableHighAccuracy: false, timeout: 8000, maximumAge: Infinity }
+                );
+            },
+            { enableHighAccuracy: true, timeout: 4000, maximumAge: 0 }
+        );
+    }
+
     fetchListings();
     fetchMyOrders();
     initMap();
+
+    const btnDetectGps = document.getElementById('btn-detect-gps');
+    if (btnDetectGps) {
+        btnDetectGps.addEventListener('click', detectUserLocation);
+    }
+
+    // Automatically detect location on load for customers (consumers)
+    detectUserLocation();
 });
 
 // --- Rating Labels Configuration ---
