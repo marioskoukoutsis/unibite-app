@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UniBite - Πίνακας Μάγειρα</title>
     <link rel="stylesheet" href="css/style.css">
+    <!-- Leaflet.js CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <!-- Leaflet.js JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 </head>
 <body>
 
@@ -57,9 +61,28 @@
                 </div>
             </div>
 
-            <div class="form-group">
-                <label for="location">Σημείο Παραλαβής</label>
-                <input type="text" id="location" class="form-control" placeholder="π.χ. Εστία Α, Δωμάτιο 10" required>
+            <input type="hidden" id="latitude" value="">
+            <input type="hidden" id="longitude" value="">
+
+            <div class="form-group" style="position: relative;">
+                <label for="location">📍 Σημείο Παραλαβής (Διεύθυνση / Τοποθεσία)</label>
+                <div style="position: relative; width: 100%;">
+                    <input type="text" id="location" class="form-control" placeholder="π.χ. Αριστοτέλους 10, Θεσσαλονίκη ή Πανεπιστήμιο..." required autocomplete="off" style="padding-right: 40px !important;">
+                    <button type="button" id="btn-detect-gps" title="Εντοπισμός τοποθεσίας" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; z-index: 10; padding: 5px; color: var(--text-muted); display: flex; align-items: center; justify-content: center; transition: color 0.2s ease;">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                        </svg>
+                    </button>
+                    <div id="location-suggestions" class="autocomplete-suggestions"></div>
+                </div>
+                <div id="cook-map-container" style="height: 250px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 0.8rem; overflow: hidden; position: relative;">
+                    <div id="cook-map" style="height: 100%; width: 100%; z-index: 1;"></div>
+                </div>
             </div>
 
             <div class="form-group">
